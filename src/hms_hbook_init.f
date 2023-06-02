@@ -13,7 +13,7 @@ C HBOOK/NTUPLE common block and parameters.
      >     'hsxfp', 'hsyfp', 'hsxpfp', 'hsypfp',
      >     'hsytari','hsdeltai', 'hsyptari', 'hsxptari',
      >     'hsytar', 'hsdelta', 'hsyptar', 'hsxptar', 
-     >     'fry','ztari','stop_id'/
+     >     'fry','ztari','wfac'/
 
       call hlimit(pawc_size)
 

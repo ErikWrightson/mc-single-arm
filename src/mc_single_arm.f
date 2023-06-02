@@ -22,7 +22,7 @@ c
 	real*8 xs_num,ys_num,xc_sieve,yc_sieve
 	real*8 xsfr_num,ysfr_num,xc_frsieve,yc_frsieve
         logical use_front_sieve /.false./
-        logical use_sieve /.false./            !Also set in mc_hms.f
+        logical use_sieve /.true./            
 c
         common /sieve_info/  xs_num,ys_num,xc_sieve,yc_sieve
      > ,xsfr_num,ysfr_num,xc_frsieve,yc_frsieve,use_sieve, use_front_sieve
@@ -66,7 +66,18 @@ C Event limits, topdrawer limits, physics quantities
 	logical*4 ok_spec			!indicates whether event makes it in MC
 	integer*4 hit_calo                      !flag for hitting the calorimeter
 	integer*4 armSTOP_successes,armSTOP_trials
-        real *8 beam_energy, el_energy, theta_sc, tar_mass !elastic calibration
+        real *8 beam_energy, el_energy, theta_sc !elastic calibration
+        real *8 tar_mass, tar_atom_num          !elastic calibration
+	real*8 mass_tar,theta_pol,eprime
+	REAL*8 q2_vertex,W_vertex
+	real*8 sig_elastic,sig_inelastic
+	real*8 cur,normfac,thick
+        real wfac
+	real*8 theta_recon,eprime_recon,eprime_calc
+	real*8 Q_E, N_A,lumin,ep_min,ep_max,domega,denergy
+        PARAMETER (Q_E = 1.602d00)            !e- charge in uCoul (*1E-13)
+        PARAMETER (N_A = 6.022d00)            !Avogadro's number (*1E+23)
+	real*8 hbarcsq,sig_mott
 
 C Initial and reconstructed track quantities.
 	real*8 dpp_init,dth_init,dph_init,xtar_init,ytar_init,ztar_init
@@ -483,18 +494,27 @@ C dxdz and dydz in HMS TRANSPORT coordinates.
      &          /1000.   + gen_lim_down(3)/1000.
 
 C Calculate for the elastic energy calibration using the beam energy.
+C change to do inelastci 
 	  if(beam_energy.ne.0) then
-	     if(ispec.eq.2) then ! SHMS
-		theta_sc = acos((cos_ts-dydz*sin_ts)/sqrt(1. + dxdz**2. + dydz**2.))
-	     elseif(ispec.eq.1) then ! HMS
-		theta_sc = acos((cos_ts+dydz*sin_ts)/sqrt(1. + dxdz**2. + dydz**2.))
-	     else
-		write(6,*) 'Elastic scattering not set up for your spectrometer' 
-		STOP
-	     endif
-	     tar_mass = 12.*931.5 !carbon
-	     el_energy = tar_mass*beam_energy/(tar_mass+2.*beam_energy*(sin(theta_sc/2.))**2)
-	     dpp = (el_energy-p_spec)/p_spec*100.
+	    mass_tar = 12.*931.5
+            cur=20. ! microAmps
+            thick=0.044 ! g/cm2 multifoil targets
+            ep_min = p_spec*(1.+0.01*gen_lim_down(1))
+	    ep_max = p_spec*(1.+0.01*gen_lim_up(1))
+	    domega = (gen_lim_up(3)-gen_lim_down(3))*(gen_lim_up(2)-gen_lim_down(2))/1000./1000.
+	    denergy = ep_max-ep_min
+	    lumin=thick*cur/12.*N_A/Q_E*1e+10 !per fm2 per sec at 20uA 
+            if (ispec .eq. 2) theta_pol = acos( (cos_ts - dydz*sin_ts)
+     +                        / sqrt( 1. + dxdz**2 + dydz**2 ) )
+            if (ispec .eq. 1) theta_pol = acos( (cos_ts + dydz*sin_ts)
+     +                        / sqrt( 1. + dxdz**2 + dydz**2 ) )
+	     eprime= p_spec*(1+0.01*dpp)
+	     Q2_vertex= 4.0*beam_energy*eprime*sin(theta_pol/2)**2
+             W_vertex= 2.*938.27*(beam_energy-eprime) + (938.27)**2 - Q2_vertex
+	     if ( W_vertex .gt. 0)  W_vertex = sqrt(W_vertex)
+	     write(*,*) eprime,beam_energy,Q2_vertex/1000./1000.,W_vertex/1000.
+	     if (  W_vertex .le. 0 ) goto 500
+	     if (  beam_energy-eprime .le. 0 ) goto 500
 	  endif
 
 
@@ -640,12 +660,19 @@ c            if (ok_spec) spec(58) =1.
 	     stop
 	  endif
 
+	  wfac = -1.
+	  normfac = -1.
 	  if (ok_spec) then !Success, increment arrays
 	    dpp_recon = dpp_s
             dth_recon = dydz_s*1000.			!mr
 	    dph_recon = dxdz_s*1000.			!mr
 	    ztar_recon = + y_s / sin_ts 
             ytar_recon = y_s
+	    wfac= 0.
+	    if (beam_energy .gt. 0 ) then
+	       
+	         wfac=domega*denergy/n_trials
+            endif
 
 C Compute sums for calculating reconstruction variances.
 	    dpp_var(1) = dpp_var(1) + (dpp_recon - dpp_init)
@@ -713,7 +740,7 @@ C for spectrometer ntuples
 	       hms_hut(13) = fry
 	       hms_hut(14)= ztar_init 
 	       if(ok_spec) then
-		  hms_hut(15)= 0
+		  hms_hut(15)= wfac
 	       else
 		  hms_hut(15)=99
 	       endif
