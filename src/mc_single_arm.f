@@ -17,7 +17,7 @@ c Vector (real*4) for hut ntuples - needs to match dimension of variables
 	real*4		shms_hut(21)
 	real*4          shms_spec(58)
 
-	real*4          hms_hut(15)
+	real*4          hms_hut(20)
 c
 	real*8 xs_num,ys_num,xc_sieve,yc_sieve
 	real*8 xsfr_num,ysfr_num,xc_frsieve,yc_frsieve
@@ -512,7 +512,7 @@ C change to do inelastci
 	     Q2_vertex= 4.0*beam_energy*eprime*sin(theta_pol/2)**2
              W_vertex= 2.*938.27*(beam_energy-eprime) + (938.27)**2 - Q2_vertex
 	     if ( W_vertex .gt. 0)  W_vertex = sqrt(W_vertex)
-	     write(*,*) eprime,beam_energy,Q2_vertex/1000./1000.,W_vertex/1000.
+c	     write(*,*) eprime,beam_energy,Q2_vertex/1000./1000.,W_vertex/1000.
 	     if (  W_vertex .le. 0 ) goto 500
 	     if (  beam_energy-eprime .le. 0 ) goto 500
 	  endif
@@ -740,10 +740,17 @@ C for spectrometer ntuples
 	       hms_hut(13) = fry
 	       hms_hut(14)= ztar_init 
 	       if(ok_spec) then
-		  hms_hut(15)= wfac
+		  hms_hut(15)=0
 	       else
 		  hms_hut(15)=99
 	       endif
+		   if(use_sieve) then
+			hms_hut(16) = xs_num
+		   	hms_hut(17) = ys_num
+		   	hms_hut(18) = xc_sieve
+		    hms_hut(19) = yc_sieve
+		   endif
+		  hms_hut(20)= wfac
 	       call hfn(1,hms_hut)
 	    endif
 	 endif
