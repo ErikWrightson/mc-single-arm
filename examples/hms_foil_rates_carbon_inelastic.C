@@ -22,7 +22,8 @@
 #include <cstdlib>
 #include<math.h>
 using namespace std;
-#include "../pbmodel/F1F209Wrapper.hh"
+//#include "../pbmodel/F1F209Wrapper.hh"
+#include "F1F209Wrapper.hh"
 
 void hms_foil_rates_carbon_inelastic(TString basename="temp",Double_t ts=7.5,Double_t p_spec=9.800){
    if (basename=="temp") {
