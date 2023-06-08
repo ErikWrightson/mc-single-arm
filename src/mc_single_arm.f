@@ -17,7 +17,7 @@ c Vector (real*4) for hut ntuples - needs to match dimension of variables
 	real*4		shms_hut(21)
 	real*4          shms_spec(58)
 
-	real*4          hms_hut(20)
+	real*4          hms_hut(23)
 c
 	real*8 xs_num,ys_num,xc_sieve,yc_sieve
 	real*8 xsfr_num,ysfr_num,xc_frsieve,yc_frsieve
@@ -751,6 +751,9 @@ C for spectrometer ntuples
 		    hms_hut(19) = yc_sieve
 		   endif
 		  hms_hut(20)= wfac
+		  hms_hut(21) = beam_energy
+		  hms_hut(22) = p_spec
+		  hms_hut(23) = th_spec
 	       call hfn(1,hms_hut)
 	    endif
 	 endif

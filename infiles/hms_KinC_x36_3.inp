@@ -4,8 +4,8 @@
 !------------------------------------------------------------------------------
      100000	Monte-Carlo trials
         1       Spectrometer (1=HMS, 2=SHMS, 3=..)
-     5927.0	Spectrometer momentum (in MeV/c)
-     12.686	Spectrometer angle (in degrees)
+     6117.0	Spectrometer momentum (in MeV/c)
+     15.961	Spectrometer angle (in degrees)
     -10.0	M.C. DP/P  down limit 
      10.0	M.C. DP/P  up   limit 
     -50.0	M.C. Theta down limit (mr)
@@ -34,3 +34,4 @@
      1		flag for multiple scattering
      1		flag for wire chamber smearing
      1	flag for storing all events (including failed events with stop_id > 0)
+     10558. Beam energy
