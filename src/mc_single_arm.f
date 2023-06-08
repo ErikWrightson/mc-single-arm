@@ -753,7 +753,7 @@ C for spectrometer ntuples
 		  hms_hut(20)= wfac
 		  hms_hut(21) = beam_energy
 		  hms_hut(22) = p_spec
-		  hms_hut(23) = th_spec
+		  hms_hut(23) = th_spec*degrad
 	       call hfn(1,hms_hut)
 	    endif
 	 endif
