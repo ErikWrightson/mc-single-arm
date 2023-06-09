@@ -5,7 +5,7 @@
      100000	Monte-Carlo trials
         1       Spectrometer (1=HMS, 2=SHMS, 3=..)
      6117.0	Spectrometer momentum (in MeV/c)
-     15.961	Spectrometer angle (in degrees)
+     12.373	Spectrometer angle (in degrees)
     -10.0	M.C. DP/P  down limit 
      10.0	M.C. DP/P  up   limit 
     -50.0	M.C. Theta down limit (mr)
@@ -14,7 +14,7 @@
      100.0	M.C. Phi   down limit (mr)
      0.01	Horiz beam spot size in cm (Full width of +/- 1 sigma)
      0.01	Vert  beam spot size in cm (Full width of +/- 1 sigma)
-     0.294	Thickness of target (Full width, cm)
+     0.1749	Thickness of target (Full width, cm)
      0.1        Raster half-width x (cm)
      0.1        Raster half-width y (cm)
      50.0	DP/P  reconstruction cut (half width in % )
@@ -33,5 +33,5 @@
      0		particle identification :e=0, p=1, d=2, pi=3, ka=4
      1		flag for multiple scattering
      1		flag for wire chamber smearing
-     1	flag for storing all events (including failed events with stop_id > 0)
+     0	flag for storing all events (including failed events with stop_id > 0)
      10558. Beam energy

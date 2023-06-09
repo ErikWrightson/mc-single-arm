@@ -22,10 +22,9 @@
 #include <cstdlib>
 #include<math.h>
 using namespace std;
-//#include "../pbmodel/F1F209Wrapper.hh"
-#include "F1F209Wrapper.hh"
+#include "../pbmodel/F1F209Wrapper.hh"
 
-void hms_foil_rates_carbon_inelastic(TString basename="temp",Double_t ts=7.5,Double_t p_spec=9.800){
+void hms_foil_rates_carbon_inelastic(TString basename="temp",double cur=70){
    if (basename=="temp") {
      cout << " Input the basename of the root file (assumed to be in worksim)" << endl;
      cin >> basename;
@@ -70,6 +69,9 @@ Float_t         hsxfp; // position at focal plane ,+X is pointing down
    Float_t ys,xs;
    Float_t event_type;
    Float_t sig;
+   Float_t beam_e;
+   Float_t p_spec_b;
+   Float_t th_spec;
    // Set branch addresses.
    //   tsimc->SetBranchAddress("xsieve",&xs);
    //  tsimc->SetBranchAddress("ysieve",&ys);
@@ -78,7 +80,7 @@ Float_t         hsxfp; // position at focal plane ,+X is pointing down
    tsimc->SetBranchAddress("hsxpfp",&hsxpfp);
    tsimc->SetBranchAddress("hsypfp",&hsypfp);
    tsimc->SetBranchAddress("hsytari",&hsytari);
-   tsimc->SetBranchAddress("hsztari",&hsztari);
+   tsimc->SetBranchAddress("ztari",&hsztari);
    tsimc->SetBranchAddress("hsdeltai",&hsdeltai);
    tsimc->SetBranchAddress("hsyptari",&hsyptari);
    tsimc->SetBranchAddress("hsxptari",&hsxptari);
@@ -87,6 +89,9 @@ Float_t         hsxfp; // position at focal plane ,+X is pointing down
    tsimc->SetBranchAddress("hsyptar",&hsyptar);
    tsimc->SetBranchAddress("hsxptar",&hsxptar);
    tsimc->SetBranchAddress("wfac",&wfac);// wfac is domega*denergy/n_thrown rad*MeV
+   tsimc->SetBranchAddress("beam_e",&beam_e);
+   tsimc->SetBranchAddress("p_spec",&p_spec_b);
+   tsimc->SetBranchAddress("th_spec",&th_spec);
 
 //define simulation histograms
 TH1F *hytar = new TH1F("hytar", "hytar", 100, -5., 5.);
@@ -143,13 +148,18 @@ Double_t thetaDeg;
 
 
 
+Double_t ts;
+Double_t p_spec;
+double Ei;//Beam energy //GeV
+//Get the beam energy, spectrometer angle and momentum from the first entry of the ntuple.
+tsimc->GetEntry(0);
+Ei = beam_e/1000.0;
+p_spec = p_spec_b/1000.0;
+ts = th_spec;
 
+Long64_t nentries = tsimc->GetEntries(); 
 
-Long64_t nentries = tsimc->GetEntries();
-double Ei ; //Beam energy //GeV
- Ei=10.555;
 //double ts = 7.5; //central spectrometer angle //deg
-     cout << " theta_spec = " << ts << " p_spec = " << p_spec << endl;
 /*
 double p_spec = 3.0; //spectrometer momentum //GeV 
 double Ei = 6.418; //Beam energy //GeV
@@ -166,7 +176,7 @@ double cos_ts = cos(ts * deg2rad);
 double sin_ts = sin(ts * deg2rad);
 double car_density = 2.2; // density of carbon g/cm3
 double mass_tar = 12. * 931.5; //mass of the target
-double cur; //current uA
+//double cur; //current uA
 double thick; // target thickness g/cm2
 double run_time =515.;// secondes;
 double lumin ;// luminosity per ub 
@@ -179,7 +189,6 @@ F1F209Wrapper pF1F209;
  Float_t cfac ;
     Float_t weight;
 //
-  cur=70.;
   cfac=1.;
   thick= 0.044; // foil thickness g/cm2 in multifoil
   thick= 0.1749; // 0.5% single carbon
@@ -189,6 +198,7 @@ lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA
 	for (int i = 0; i < nentries; i++) {
       		tsimc->GetEntry(i);
 
+          //cout<<"Beam Energy: "<<Ei<<" Spectrometer Momentum: "<<p_spec<<" Spectrometer Angle: ";
 		// Define kinematics
 		Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
 		nu = Ei - Ef; //GeV
@@ -227,8 +237,10 @@ lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA
         h_xpfp_delta->Fill(hsdelta,hsxpfp,weight);
 		}
 	}
+  cout << " theta_spec = " << ts << " p_spec = " << p_spec << endl;
  //
 
+cout<<hWQ2->Integral()<<endl;
 	if (hWQ2->Integral() > 0) {
 TCanvas *c = new TCanvas("c", "c", 800, 1200);
 c->Divide(2,2);
