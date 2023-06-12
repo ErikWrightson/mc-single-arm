@@ -193,117 +193,128 @@ F1F209Wrapper pF1F209;
   thick= 0.044; // foil thickness g/cm2 in multifoil
   thick= 0.1749; // 0.5% single carbon
 lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA
- 
+
+Double_t rate;
+TText *t;
 
 	for (int i = 0; i < nentries; i++) {
-      		tsimc->GetEntry(i);
-
-          //cout<<"Beam Energy: "<<Ei<<" Spectrometer Momentum: "<<p_spec<<" Spectrometer Angle: ";
-		// Define kinematics
-		Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
-		nu = Ei - Ef; //GeV
-		W2=0;
-	h_ytar->Fill(hsytari);
-        h_ztar_yptar_all->Fill(hsztari,hsyptari);
-               if (nu >0) {
-		  theta = TMath::ACos((cos_ts - hsyptar * sin_ts) / TMath::Sqrt( 1. + hsxptar * hsxptar + hsyptar * hsyptar )); // polar 			scattering angle relative to the beam line //rad
-		thetaDeg = theta / deg2rad;
-		Q2 = 4.0 * Ei * Ef * (TMath::Sin(theta / 2.0) * TMath::Sin(theta / 2.0)); //GeV^2
-		nu = Ei - Ef; //GeV
-		W2 = -Q2 + Mp * Mp + 2.0 * Mp * nu; // GeV^2
-                W=0.;
-		if (W2 > 0) W = TMath::Sqrt(W2); //GeV
-		}
-		//call the CS function
-                if (W2 > 0) {
-		sig_inelastic = pF1F209.GetXS(Z, A, Ei, Ef, theta); // ub/MeV-sr
-		//Fill histograms
-                // wfac is domega*denergy/n_thrown rad*MeV
-                // lumin 1/ub for cur uA
-                weight=sig_inelastic*lumin*wfac*cfac;
-		hytar->Fill(hsytar,weight);
-
-		hWw->Fill(W,weight);
-		hWQ2->Fill(Q2,weight);
-		hWom->Fill(nu,weight);
-		hth->Fill(thetaDeg,weight);
-        h_xs_ys->Fill(ys,xs,weight);
-       h_xfp_yfp->Fill(hsxfp,hsyfp,weight);
-        h_xfp_ypfp->Fill(hsxfp,hsypfp,weight);
-        h_xfp_xpfp->Fill(hsxfp,hsxpfp,weight);
-        h_yfp_ypfp->Fill(hsyfp,hsypfp,weight);
-        h_yfp_xpfp->Fill(hsyfp,hsxpfp,weight);
-        h_xpfp_ypfp->Fill(hsxpfp,hsypfp,weight);
-        h_xpfp_delta->Fill(hsdelta,hsxpfp,weight);
+    tsimc->GetEntry(i);
+    
+    // Define kinematics
+    Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
+    nu = Ei - Ef; //GeV
+    W2=0;
+    h_ytar->Fill(hsytari);
+    h_ztar_yptar_all->Fill(hsztari,hsyptari);      
+    if (nu >0) {
+      theta = TMath::ACos((cos_ts - hsyptar * sin_ts) / TMath::Sqrt( 1. + hsxptar * hsxptar + hsyptar * hsyptar )); // polar 			scattering angle relative to the beam line //rad
+      thetaDeg = theta / deg2rad;
+      Q2 = 4.0 * Ei * Ef * (TMath::Sin(theta / 2.0) * TMath::Sin(theta / 2.0)); //GeV^2
+      nu = Ei - Ef; //GeV
+      W2 = -Q2 + Mp * Mp + 2.0 * Mp * nu; // GeV^2
+      W=0.;
+      if (W2 > 0) W = TMath::Sqrt(W2); //GeV
+    }
+    //call the CS function
+    if (W2 > 0) {
+      sig_inelastic = pF1F209.GetXS(Z, A, Ei, Ef, theta); // ub/MeV-sr
+      //Fill histograms
+      // wfac is domega*denergy/n_thrown rad*MeV
+      // lumin 1/ub for cur uA
+      weight=sig_inelastic*lumin*wfac*cfac;
+      hytar->Fill(hsytar,weight);
+      
+      hWw->Fill(W,weight);
+      hWQ2->Fill(Q2,weight);
+      hWom->Fill(nu,weight);
+      hth->Fill(thetaDeg,weight);
+      h_xs_ys->Fill(ys,xs,weight);
+      h_xfp_yfp->Fill(hsxfp,hsyfp,weight);
+      h_xfp_ypfp->Fill(hsxfp,hsypfp,weight);
+      h_xfp_xpfp->Fill(hsxfp,hsxpfp,weight);
+      h_yfp_ypfp->Fill(hsyfp,hsypfp,weight);
+      h_yfp_xpfp->Fill(hsyfp,hsxpfp,weight);
+      h_xpfp_ypfp->Fill(hsxpfp,hsypfp,weight);
+      h_xpfp_delta->Fill(hsdelta,hsxpfp,weight);
 		}
 	}
+  
   cout << " theta_spec = " << ts << " p_spec = " << p_spec << endl;
- //
+  //
+  rate = hWQ2->Integral();
+  t = new TText(.5,.5,Form("Inelastic MC rate: %f Hz",rate));
+  t->SetTextAlign(22);
 
-cout<<hWQ2->Integral()<<endl;
-	if (hWQ2->Integral() > 0) {
-TCanvas *c = new TCanvas("c", "c", 800, 1200);
-c->Divide(2,2);
-c->cd(1);
-hWw->Draw();
-c->cd(2);
- hWQ2->Draw();
- cout << "Inelastic  MC rate = " << hWQ2->Integral() << endl;
-c->cd(3);
- hth->Draw();
-c->cd(4);
- hWom->Draw();
+	if (rate > 0) {
+    TCanvas *c = new TCanvas("c", "c", 800, 1200);
+    c->Divide(2,2);
+    c->cd(1);
+    hWw->Draw();
+    c->cd(2);
+    hWQ2->Draw();
+    cout << "Inelastic  MC rate = " << rate << " Hz" << endl;
+    c->cd(3);
+    hth->Draw();
+    c->cd(4);
+    hWom->Draw();
     outputpdf="inelastic_carbon/"+basename+"_kin.pdf";
- c->Print(outputpdf);
-//hom_dat->Draw("same");
- //
+    c->Print(outputpdf+"(");
 
-
-//
-TCanvas *cfp = new TCanvas("cfp","Focal plane ",1400,900);
- cfp->Divide(2,3);
- gStyle->SetGridStyle(1);
- cfp->cd(1);
-   gPad->SetLogz();
-   gPad->SetGridx();
-   gPad->SetGridy();
- h_xfp_yfp->Draw("colz");
- HList.Add(h_xfp_yfp);
- title->Draw();
- cfp->cd(2);
- h_xfp_xpfp->Draw("colz");
- HList.Add(h_xfp_xpfp);
- cfp->cd(3);
- h_xpfp_ypfp->Draw("colz");
- HList.Add(h_xpfp_ypfp);
- cfp->cd(4);
-h_yfp_ypfp->Draw("colz");
- HList.Add(h_yfp_ypfp);
- cfp->cd(5);
-h_yfp_xpfp->Draw("colz");
- HList.Add(h_yfp_xpfp);
- cfp->cd(6);
- h_xfp_ypfp->Draw("colz");
- HList.Add(h_xfp_ypfp);
+    c->Clear();
+    t->Draw();
+    c->Print(outputpdf+")");
+    delete c;
+    //hom_dat->Draw("same");
+    //
+    //
+    TCanvas *cfp = new TCanvas("cfp","Focal plane ",1400,900);
+    cfp->Divide(2,3);
+    gStyle->SetGridStyle(1);
+    cfp->cd(1);
+    gPad->SetLogz();
+    gPad->SetGridx();
+    gPad->SetGridy();
+    h_xfp_yfp->Draw("colz");
+    HList.Add(h_xfp_yfp);
+    title->Draw();
+    cfp->cd(2);
+    h_xfp_xpfp->Draw("colz");
+    HList.Add(h_xfp_xpfp);
+    cfp->cd(3);
+    h_xpfp_ypfp->Draw("colz");
+    HList.Add(h_xpfp_ypfp);
+    cfp->cd(4);
+    h_yfp_ypfp->Draw("colz");
+    HList.Add(h_yfp_ypfp);
+    cfp->cd(5);
+    h_yfp_xpfp->Draw("colz");
+    HList.Add(h_yfp_xpfp);
+    cfp->cd(6);
+    h_xfp_ypfp->Draw("colz");
+    HList.Add(h_xfp_ypfp);
     outputpdf="inelastic_carbon/"+basename+".pdf";
- cfp->Print(outputpdf);
+    cfp->Print(outputpdf+"(");
+
+    cfp->Clear();
+    t->Draw();
+    cfp->Print(outputpdf+")");
+    delete cfp;
 	}
-//
-//
-TCanvas *cytar = new TCanvas("cytar", "cytar", 800, 1200);
- cytar->Divide(1,1);
- cytar->cd(1);
- hytar->Draw();
-   outputpdf="inelastic_carbon/"+basename+"_ytar.pdf";
- cytar->Print(outputpdf);
- //
- TFile hsimc(outputhist,"recreate");
- HList.Write();
- cout << " Plotted histograms put in root file = " << outputhist << endl;
-
+  //
+  //
+  TCanvas *cytar = new TCanvas("cytar", "cytar", 800, 1200);
+  cytar->Divide(1,1);
+  cytar->cd(1);
+  hytar->Draw();
+  outputpdf="inelastic_carbon/"+basename+"_ytar.pdf";
+  cytar->Print(outputpdf+"(");
+  cytar->cd(2);
+  cytar->Clear();
+  t->Draw();
+  cytar->Print(outputpdf+")");
+  delete cytar;
+  //
+  TFile hsimc(outputhist,"recreate");
+  HList.Write();
+  cout << " Plotted histograms put in root file = " << outputhist << endl;
 }
-
-
-
-
-
