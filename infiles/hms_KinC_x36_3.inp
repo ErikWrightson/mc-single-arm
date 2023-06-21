@@ -4,10 +4,10 @@
 !------------------------------------------------------------------------------
      100000	Monte-Carlo trials
         1       Spectrometer (1=HMS, 2=SHMS, 3=..)
-     6117.0	Spectrometer momentum (in MeV/c)
+     6117.	Spectrometer momentum (in MeV/c)
      12.373	Spectrometer angle (in degrees)
-    -10.0	M.C. DP/P  down limit 
-     10.0	M.C. DP/P  up   limit 
+    -12.0	M.C. DP/P  down limit 
+     12.0	M.C. DP/P  up   limit 
     -50.0	M.C. Theta down limit (mr)
      50.0	M.C. Theta down limit (mr)
     -100.0	M.C. Phi   down limit (mr)
@@ -26,12 +26,12 @@
      0.0	Beam y offset (cm)  +y = up
      0.0        Target z offset (cm)+z = downstream (0.25)
      0.0        Spectrometer x offset (cm) +x = down
-     0.143      Spectrometer y offset (cm)
+     0.0        Spectrometer y offset (cm)
      0.0        Spectrometer z offset (cm)
-     1.1        Spectrometer xp offset (mr)
+     0.0        Spectrometer xp offset (mr)
      0.0        Spectrometer yp offset (mr)
      0		particle identification :e=0, p=1, d=2, pi=3, ka=4
      1		flag for multiple scattering
      1		flag for wire chamber smearing
-     0	flag for storing all events (including failed events with stop_id > 0)
-     10558. Beam energy
+     0	         flag for storing all events (including failed events with stop_id > 0)
+10558.           beam energy

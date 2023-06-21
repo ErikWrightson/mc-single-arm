@@ -14,7 +14,7 @@
      100.0	M.C. Phi   down limit (mr)
      0.01	Horiz beam spot size in cm (Full width of +/- 1 sigma)
      0.01	Vert  beam spot size in cm (Full width of +/- 1 sigma)
-     0.1	Thickness of target (Full width, cm)
+     0.1749	Thickness of target (Full width, cm)
      0.1        Raster half-width x (cm)
      0.1        Raster half-width y (cm)
      50.0	DP/P  reconstruction cut (half width in % )
