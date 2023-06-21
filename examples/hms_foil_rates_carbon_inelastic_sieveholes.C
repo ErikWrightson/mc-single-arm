@@ -40,7 +40,7 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
    TString inputroot;
    inputroot="worksim/"+basename+".root";
    TString outputhist;
-   outputhist="worksim/"+basename+"_sieve_hist.root";
+   outputhist="worksim/sieveHolesHists/"+basename+"_sieve_hist.root";
    TObjArray HList(0);
    TString outputpdf1="inelastic_carbon/sieveData/"+basename+"_sieve_kin.pdf";
    TString outputpdf2="inelastic_carbon/sieveData/"+basename+"_sieve.pdf";;
@@ -131,7 +131,7 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
    //define simulation histograms
    for(int x = 0; x < xmax; x++){
     for(int y = 0; y < ymax; y++){
-        hytar[x][y] = new TH1F("hytar", "hytar", 100, -5., 5.);
+        hytar[x][y] = new TH1F(Form("hytar_x%i_y%i", x-4, y-4), Form("hytar_x%i_y%i", x-4, y-4), 100, -5., 5.);
         
         hWw[x][y]= new TH1F(Form("hWw_x%i_y%i",x-4,y-4), Form("hWw_x%d_y%d",x-4,y-4), 100, 0, 5.0);
         hWw[x][y]->GetXaxis()->SetTitle("W [GeV]");
@@ -214,8 +214,10 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
    lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA
    
    Double_t rate[xmax][ymax];
+   Double_t time[xmax][ymax];
    TText *t;
    TText *t2;
+   TText *t3;
    
    for (int i = 0; i < nentries; i++) {
         tsimc->GetEntry(i);
@@ -276,11 +278,19 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
         for(int y3 = 0; y3 < ymax; y3++){
             
             rate[x3][y3] = hWQ2[x3][y3]->Integral();
+            if(rate[x3][y3] != 0){
+                time[x3][y3] = 200.0/rate[x3][y3];
+            }
+            else{
+                time[x3][y3] = 0;
+            }
             t = new TText(0.5,.5,Form("Inelastic MC rate: %f Hz",rate[x3][y3]));
             t->SetTextAlign(22);
             t2 = new TText(0.5, 0.6, Form("for xsnum = %i and ysnum = %i", x3-4, y3-4));
             t2->SetTextAlign(22);
-            
+            t3 = new TText(0.5,.4,Form("Time to 200 Events: %f s", time[x3][y3]));
+            t3->SetTextAlign(22);
+
             if (rate[x3][y3] > 0) {
                 
                 check++;
@@ -293,6 +303,7 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
                 c->cd(2);
                 hWQ2[x3][y3]->Draw();
                 cout << "Inelastic  MC rate = " << rate[x3][y3] << " Hz for xsnum = " << x3-4 << " and ysnum = " << y3-3 << endl;
+                cout << "Time to 200 events = " << time[x3][y3] << " s" << endl;
                 c->cd(3);
                 hth[x3][y3]->Draw();
                 c->cd(4);
@@ -306,7 +317,8 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
                 }
 
                 c->Clear();
-                t->Draw();
+                t3->Draw();
+                t->Draw("SAME");
                 t2->Draw("SAME");
                 c->SaveAs(outputpdf1);
 
@@ -349,7 +361,8 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
                 
                 
                 cfp->Clear();
-                t->Draw();
+                t3->Draw();
+                t->Draw("SAME");
                 t2->Draw("SAME");
                 cfp->SaveAs(outputpdf2);
                 
@@ -369,23 +382,56 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
             }
             cytar->cd(2);
             cytar->Clear();
-            t->Draw();
+            t3->Draw();
+            t->Draw("SAME");
             t2->Draw("SAME");
-            if(x3 == xmax-1 && y3==ymax -1){
-                cytar->SaveAs(outputpdf3+")");
-            }
-            else{
-                cytar->SaveAs(outputpdf3);
-            }
+            cytar->SaveAs(outputpdf3);
             //
         }
     }
 
-    c->Clear();
-    c->SaveAs(outputpdf1+")");
+    Double_t lowRate = 1000000;
+    Double_t lowTime;
+    int lowX;
+    int lowY;
 
-    cfp->Clear();
-    cfp->SaveAs(outputpdf2+")");
+    for(int x5 = 0; x5 < xmax; x5++){
+        for(int y5 = 0; y5 < ymax; y5++){
+            if(rate[x5][y5] != 0 && rate[x5][y5] - lowRate < 0){
+                lowRate = rate[x5][y5];
+                lowTime = time[x5][y5];
+                lowX = x5 - 4;
+                lowY = y5 - 4;
+            }
+        }
+    }
+
+    TText* t4 = new TText(0.5,.5,Form("Lowest Inelastic MC rate: %f Hz",lowRate));
+    t4->SetTextAlign(22);
+    TText* t5 = new TText(0.5, 0.6, Form("Found in xsnum = %i and ysnum = %i", lowX, lowY));
+    t5->SetTextAlign(22);
+    TText* t6 = new TText(0.5,.4,Form("Low Time to 200 Events: %f s", lowTime));
+    t6->SetTextAlign(22);
+
+    if(check > 0){
+        c->Clear();
+        t6->Draw();
+        t4->Draw("SAME");
+        t5->Draw("SAME");
+        c->SaveAs(outputpdf1+")");
+        
+        cfp->Clear();
+        t6->Draw();
+        t4->Draw("SAME");
+        t5->Draw("SAME");
+        cfp->SaveAs(outputpdf2+")");
+    }
+
+    cytar->Clear();
+    t6->Draw();
+    t4->Draw("SAME");
+    t5->Draw("SAME");
+    cytar->SaveAs(outputpdf3+")");
 
 
     delete c;

@@ -40,7 +40,7 @@ gStyle->SetPalette(1,0);
    TString inputroot;
    inputroot="worksim/"+basename+".root";
    TString outputhist;
-   outputhist="worksim/"+basename+"_hist.root";
+   outputhist="worksim/hists/"+basename+"_hist.root";
  TObjArray HList(0);
      TString outputpdf;
      //   outputpdf="plots/"+basename+".pdf";
