@@ -17,9 +17,12 @@ since the Makefile is not smart enough to look for dependency
 Running code
 ------------
 
-Easiest way is to use "run_mc_single_arm <filename>"
+Easiest way is to 
 
-Alternately:
+Alternative 1:
+use "run_mc_single_arm <filename>" (filename assumed to be in infiles subdirectory)
+
+Alternative 2:
 cd src
 mc_single_arm 
 (ask for input file name (assumed in infiles subdirectory))
@@ -60,11 +63,20 @@ Code flow
 
 Sub Directories
 ---------------
-* hms: HMS subroutines
-* shms  : SHMS subroutines
+* src : location of source code for simulator
+    * hms: HMS subroutines
+    * shms  : SHMS subroutines
 * infiles : input files
 * outfiles : the output files 
-* worksim : rzdat files
+* worksim : rzdat files and root files after uncompressing using scripts
+* inelastic_carbon : output files from running HMS carbon foil rates macros
+    * multifoil : multifoil HMS inelastic carbon rate pdf outputs
+    * multifoilHoles : multifoil with sieve hole seperation HMS inelastic carbon rate pdf outputs
+    * sieveData : single foil with sieve hole seperation HMS inelastic carbon rate pdf outputs
+    * single : single foil HMS inelastic carbon rate pdf outputs
+* runout : collected terminal outputs from running the simulator
+* pbmodel : model used to link to the object file libF1F209.so for getting cross-sections for the HMS carbon foil rates macros
+* examples : example analysis macros and HMS ideal (calculated using intial conditions, i.e. perfect sieve ID, perfect multifoil ID, etc.) Carbon foil rate macros
 
 Info on infiles
 ---------------
@@ -99,3 +111,29 @@ Ntuple variables in SHMS hut ntuple ntuple id = 1411
 * ysnum   sieve slit horizontal hole number ( hole number at front sieve if use_front_sieve = true)
 * xsieve   sieve slit vertical position (cm)  ( position at front sieve if use_front_sieve = true)
 * ysieve   sieve slit horizontal position (cm) ( position at front sieve if use_front_sieve = true)
+
+Ntuple variable in HMS hut ntuple ntuple id = 1
+---------------------
+* hsxfp Focal plane vertical position
+* hsyfp Focal plane horizontal position
+* hsxpfp Focal plane vertical angle=dx/dz
+* hsypfp Focal plane horizaontal angle=dy/dz
+* hsytari Initial y (horizontal) position at the z=0 plane perpendicular to the central ray of the HMS
+* hsdeltai Initial random delta = (p-pcent)/(pcent)
+* hsyptari Initial random horizontal angle=dy/dz
+* hsxptari Initial random vertical angle=dx/dz
+* hsytar Reconstructed horizontal position at the target
+* hsdelta Reconstructed
+* hsyptar Reconstructed horizontal angle=dy/dz at the target
+* hsxptar Reconstructed vertical angle=dx/dz at the target
+* fry Initial random vertical raster position
+* ztari Initial random position along the target (z)
+* stop_id flag marking valid event 0 if valid (can generate with only valid)
+* xs_num Sieve hole passed through in the x (vertical) direction (NOT RECONSTRUCTED)
+* ys_num Sieve hole passed through in the y (horizontal) direction (NOT RECONSTRUCTED)
+* xc_sieve Reconstructed sieve hole passed through in the x (vertical) direction
+* yc_sieve Reconstucted sieve hole passed through in the y (horizontal) direction
+* wfac weighting factor - solid angle times energy divided by the number of trials domega*denergy/n_trials [rad*MeV]
+* beam_E Beam Energy [GeV]
+* p_spec Spectrometer Momentum  [GeV]
+* th_spec Spectometer Angle [deg]

@@ -1,3 +1,11 @@
+/**
+ * Originally adapted from code by Mark Jones (jones) and modified to allow carbon multifoil use
+ * with a sieve in place, and intaking different currents.
+ * @author Erik Wrightson (wrightso)
+ * @created June 2023
+ * @version 06.27.2023
+ */
+
 #include <TSystem.h>
 #include <TString.h>
 #include "TFile.h"
@@ -24,18 +32,36 @@
 using namespace std;
 #include "../pbmodel/F1F209Wrapper.hh"
 
+/**
+ * This macro runs gets the rate of events per sieve hole on a carbon optics target in the HMS Spectrometer in
+ * Hall-C at JLab with the optics sieve in place. Must be linked with the object file libF1F209.so found in the pbmodel directory as it uses a
+ * wrapper class to get the inelastic cross-section  of each event. This will also plot various kinematics for events
+ * passing through each hole originating from each foil.
+ *
+ * @note There is no delta cut being made and the cuts for the sieve holes are done asssuming
+ * assuming perfect hole ID using the initial target values for each event. Conversion for using with real data
+ * should be done by making cuts on reconstructed variables.
+ *
+ * @param basename - name of the root file that is assumed to be in the worksim directory
+ * @param cur - current to calculate the rates at in uA
+ * @param foilSep - seperation of the non-z=0 foils in cm
+ * @param threeFoil - flag for a threefoil target (true = there is a z=0 foil)
+ */
 void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, double foilSep=8, bool threeFoil=false){
 
+    //Set the number of foils for this analysis. (Default to two.)
     int nfoil = 2;
-    
     if(threeFoil){
         nfoil = 3;
     }
 
+    //Prompt the user for the name of the root file if not already provided.
    if (basename=="temp") {
      cout << " Input the basename of the root file (assumed to be in worksim)" << endl;
      cin >> basename;
    }
+
+   //Set global options.
    gStyle->SetPalette(1,0);
    gStyle->SetOptStat(1);
    gStyle->SetOptFit(11);
@@ -44,6 +70,8 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    gStyle->SetLabelSize(0.04,"XY");
    gStyle->SetTitleSize(0.06,"XY");
    gStyle->SetPadLeftMargin(0.12);
+
+   //Declare paths input and paths for storing output.
    TString inputroot;
    inputroot="worksim/"+basename+".root";
    TString outputhist;
@@ -52,13 +80,15 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    TString outputpdf1="inelastic_carbon/multifoilHoles/"+basename+"_MSH_kin.pdf";
    TString outputpdf2="inelastic_carbon/multifoilHoles/"+basename+"_MSH.pdf";;
    TString outputpdf3="inelastic_carbon/multifoilHoles/"+basename+"_MSH_ytar.pdf";
-   //   outputpdf="plots/"+basename+".pdf";
    TString htitle=basename;
    TPaveLabel *title = new TPaveLabel(.15,.90,0.95,.99,htitle,"ndc");
    //  gSystem->Load("pbmodel/libF1F209.so");
+   
+   //Open the rootfile and retrieve its tree.
    TFile *fsimc = new TFile(inputroot); 
    TTree *tsimc = (TTree*) fsimc->Get("h1");
-   
+
+   //Declare variables to store each entry from the hms ntuple.   
    Float_t         hsxfp; // position at focal plane ,+X is pointing down
    Float_t         hsyfp; // X x Y = Z so +Y pointing central ray left
    Float_t         hsxpfp; // dx/dz at focal plane
@@ -115,6 +145,8 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    Double_t y_r= 40.;
    Double_t xp_r=.1;
    Double_t yp_r=.04;
+
+   //Declare all histogram arrays with enough room for each foil and all sieve holes to seperate by hole.
    TH1F *hytar[nfoil][xmax][ymax];
    TH1F *hWw[nfoil][xmax][ymax];
    TH1F *hWQ2[nfoil][xmax][ymax];
@@ -135,7 +167,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    TH2F* h_ztar_yptar_all[nfoil][xmax][ymax];
    TH1F* h_ytar[nfoil][xmax][ymax];
 
-   //define simulation histograms
+   //Instantiate histograms.
    for(int n = 0; n < nfoil; n++){
         for(int x = 0; x < xmax; x++){
             for(int y = 0; y < ymax; y++){
@@ -186,7 +218,8 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    Double_t ts;
    Double_t p_spec;
    double Ei;//Beam energy //GeV
-   //Get the beam energy, spectrometer angle and momentum from the first entry of the ntuple.
+   
+   //Get the beam energy, spectrometer angle and momentum from the first entry of the ntuple (assumed to be the same throughout).
    tsimc->GetEntry(0);
    Ei = beam_e/1000.0;
    p_spec = p_spec_b/1000.0;
@@ -213,6 +246,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    double sig_inelastic;
    double ex_calc;
    double sig_elas_calc;
+   //Included by linking with files in pbmodel folder.
    F1F209Wrapper pF1F209;
    Float_t cfac;
    Float_t weight;
@@ -220,10 +254,12 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
    cfac=1.;
    thick= 0.044; // foil thickness g/cm2 in multifoil
    //thick= 0.1749; // 0.5% single carbon
-   lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA
+   lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA, 1e-36 corrects for change of unit size
    
+   //Store the rate for each sieve hole sourced from each foil.
    Double_t rate[nfoil][xmax][ymax];
    Double_t time[nfoil][xmax][ymax];
+   //Use TText variables to print out any single data points that may be useful.
    TText *t;
    TText *t2;
    TText *t3;
@@ -232,11 +268,17 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
         tsimc->GetEntry(i);
         for(int x2 = 0; x2 < xmax; x2++){
             for(int y2 = 0; y2 < ymax; y2++){
-                if(xsnum == x2-4 && ysnum == y2-4){
+                
+                //Sort for each whole that each event came through. (THIS USES THE INITIAL VARIABLES NOT THE RECONSTRUCTED)
+                //Ignore holes that are not actually there (refer to sieve schematic).
+                //Central hole is smaller than other but not implemented since central hole is never really a limiting factor.
+                if(xsnum == x2-4 && ysnum == y2-4 && !(xsnum == -1 && ysnum == 1) && !(xsnum == 1 && ysnum == -1)){
+                    
                     // Define kinematics
                     Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
                     nu = Ei - Ef; //GeV
-                    W2=0;
+                    W2=0; //W^2
+                    //if final energy is less than initial calculcate the other kinematic values for this event.
                     if (nu >0) {
                         theta = TMath::ACos((cos_ts - hsyptar * sin_ts) / TMath::Sqrt( 1. + hsxptar * hsxptar + hsyptar * hsyptar )); // polar 			scattering angle relative to the beam line //rad
                         thetaDeg = theta / deg2rad;
@@ -248,13 +290,18 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                     }
                     //call the CS function
                     if (W2 > 0){
+                        //Get inelastic cross section for this event.
                         sig_inelastic = pF1F209.GetXS(Z, A, Ei, Ef, theta); // ub/MeV-sr
                         
+                        //Weight the data by the cross-section times the luminosity and weighting factor.
                         // wfac is domega*denergy/n_thrown rad*MeV
                         // lumin 1/ub for cur uA
                         weight=sig_inelastic*lumin*wfac*cfac;
                     }
-
+                    
+                    //Check if this event originated from the -z foil.
+                    //USES INITIAL VALUES. ONLY VALID ASSUMING PERFECT IDENTIFICATION OF SOURCE (or using the mc-single-arm simulator).
+                    //USE RECONSTRUCTED VALUES FOR CUTTING REAL DATA.
                     if(hsztari >= -1*foilSep-(thick/2) && hsztari <= -1*foilSep+(thick/2)){
                         h_ytar[0][x2][y2]->Fill(hsytari);
                         h_ztar_yptar_all[0][x2][y2]->Fill(hsztari,hsyptari);
@@ -278,6 +325,9 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                         }
                     }
                     else if(hsztari >= foilSep-(thick/2) && hsztari <= foilSep+(thick/2)){
+                        //Check if this event originated from the +z foil.
+                        //USES INITIAL VALUES. ONLY VALID ASSUMING PERFECT IDENTIFICATION OF SOURCE (or using the mc-single-arm simulator)
+                        //USE RECONSTRUCTED VALUES FOR CUTTING REAL DATA.
                         h_ytar[nfoil-1][x2][y2]->Fill(hsytari);
                         h_ztar_yptar_all[nfoil-1][x2][y2]->Fill(hsztari,hsyptari);
 
@@ -300,6 +350,10 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                         }
                     }
                     else if(threeFoil && hsztari >= -(thick/2) && hsztari <= (thick/2)){
+                        //Check if this event originated from the z=0 foil in the case of three foils.
+                        //USES INITIAL VALUES. ONLY VALID ASSUMING PERFECT IDENTIFICATION OF SOURCE (or using the mc-single-arm simulator).
+                        //USE RECONSTRUCTED VALUES FOR CUTTING REAL DATA.
+                        
                         h_ytar[1][x2][y2]->Fill(hsytari);
                         h_ztar_yptar_all[1][x2][y2]->Fill(hsztari,hsyptari);
 
@@ -326,24 +380,33 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
         }
     }
     
+    //Output the spectrometer angle and central momentum as a check that the data has been taken correctly.
     cout << " theta_spec = " << ts << " p_spec = " << p_spec << endl;
     //
+    //Declare the canvases used to create the pdfs printed.
     TCanvas *c = new TCanvas("c", "c", 800, 1200);
     TCanvas *cfp = new TCanvas("cfp","Focal plane ",1400,900);
     TCanvas *cytar = new TCanvas("cytar", "cytar", 800, 1200);
+    
+    //Count how many holes have non-zero rates.
     int check = 0;
 
     for(int n2 = 0; n2 < nfoil; n2++){
         for(int x3 = 0; x3 < xmax; x3++){
             for(int y3 = 0; y3 < ymax; y3++){
-                
+                //Integrate over the weighted Q^2 to get the rate for each hole.
                 rate[n2][x3][y3] = hWQ2[n2][x3][y3]->Integral();
+
                 if(rate[n2][x3][y3] != 0){
+                    //Get the time it takes to get to 200 events at this calculated rate.
                     time[n2][x3][y3] = 200.0/rate[n2][x3][y3];
                 }
                 else{
+                    //If the rate is 0 avoid a divide by zero error and just 0 out the answer.
                     time[n2][x3][y3] = 0;
                 }
+
+                //Write out the rates and location for this hole.
                 t = new TText(0.5,.5,Form("Inelastic MC rate: %f Hz",rate[n2][x3][y3]));
                 t->SetTextAlign(22);
                 t2 = new TText(0.5, 0.6, Form("for f-%i xsnum = %i and ysnum = %i",n2,x3-4, y3-4));
@@ -351,6 +414,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                 t3 = new TText(0.5,.4,Form("Time to 200 Events: %f s", time[n2][x3][y3]));
                 t3->SetTextAlign(22);
                 
+                //Print the basic histograms for each hole.
                 if (rate[n2][x3][y3] > 0) {
                     check++;
                     
@@ -410,7 +474,8 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                     h_xfp_ypfp[n2][x3][y3]->Draw("colz");
                     HList.Add(h_xfp_ypfp[n2][x3][y3]);
                     
-                    if(check == 1){//x3==0 && y3==0){
+                    //If this is the first time through open the pdf.
+                    if(check == 1){
                         cfp->SaveAs(outputpdf2+"(");
                     }
                     else{
@@ -455,6 +520,20 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
     int lowY;
     int lowF;
 
+    //Declare histograms to store the rates of events sourced from each foil.
+    TH2F *h_rates_foils[nfoil];
+    if(threeFoil){
+        h_rates_foils[0] = new TH2F("h_rates_f0","Rates from f=0;xsnum;ysnum",30,-5,5,30,-5,5);
+        h_rates_foils[1] = new TH2F("h_rates_f1","Rates from f=1;xsnum;ysnum",30,-5,5,30,-5,5);
+        h_rates_foils[nfoil-1] = new TH2F("h_rates_f2","Rates from f=2;xsnum;ysnum",30,-5,5,30,-5,5);
+    }
+    else{
+        h_rates_foils[0] = new TH2F("h_rates_f0","Rates from f=0;xsnum;ysnum",30,-5,5,30,-5,5);
+        h_rates_foils[nfoil-1] = new TH2F("h_rates_f1","Rates from f=1;xsnum;ysnum",30,-5,5,30,-5,5);
+    }
+    TH2F *h_rates_all = new TH2F("h_rates_all","Combined Rates from all foils;xsnum;ysnum",30,-5,5,30,-5,5);
+    
+    //Get the lowest non-zero rate for hole, its location and fill the rates histograms.
     for(int n4 = 0; n4 < nfoil; n4++){
         for(int x5 = 0; x5 < xmax; x5++){
             for(int y5 = 0; y5 < ymax; y5++){
@@ -466,25 +545,155 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                     lowY = y5 - 4;
                     lowF = n4;
                 }
+                h_rates_foils[n4]->Fill(x5-4,y5-4,rate[n4][x5][y5]);
+            }
+        }
+    }
+    
+    int zeroCount = 0;
+    int timeUnder3_0 = 0;
+    int timeUnder3_1 = 0;
+    int timeUnder3_2 = 0;
+    int comboTimeUnder3 = 0;
+
+    //Get the number of holes with a rate of 0 from all foils, the number of holes that would reach 200 counts within 3 hours,
+    //and the combined rates for each hole.
+    for(int x6 = 0; x6 < xmax; x6++){
+        for (int y6 = 0; y6 < ymax; y6++){
+            if(threeFoil){
+                if(rate[0][x6][y6] == 0 && rate[1][x6][y6] == 0 && rate[nfoil-1][x6][y6]){
+                    zeroCount++;
+                }
+                if(time[0][x6][y6] != 0 && time[0][x6][y6] < 10800) timeUnder3_0++;
+                if(time[1][x6][y6] != 0 && time[1][x6][y6] < 10800) timeUnder3_1++;
+                if(time[nfoil-1][x6][y6] != 0 &&time[nfoil-1][x6][y6] < 10800) timeUnder3_2++;
+                if(200.0/(rate[0][x6][y6]+rate[1][x6][y6]+rate[nfoil-1][x6][y6]) < 10800) comboTimeUnder3++;
+                h_rates_all->Fill(x6-4,y6-4,rate[0][x6][y6]+rate[1][x6][y6]+rate[nfoil-1][x6][y6]);
+            }
+            else{
+                if(rate[0][x6][y6] == 0 && rate[nfoil-1][x6][y6]){
+                    zeroCount++;
+                }
+                if(time[0][x6][y6] != 0 && time[0][x6][y6] < 10800) timeUnder3_0++;
+                if(time[nfoil-1][x6][y6] != 0 && time[nfoil-1][x6][y6] < 10800) timeUnder3_1++;
+                if(200.0/(rate[0][x6][y6]+rate[nfoil-1][x6][y6]) < 10800) comboTimeUnder3++;
+                h_rates_all->Fill(x6-4,y6-4,rate[0][x6][y6]+rate[nfoil-1][x6][y6]);
+
             }
         }
     }
 
-    TText* t4 = new TText(0.5,.5,Form("Lowest Inelastic MC rate: %f Hz",lowRate));
-    t4->SetTextAlign(22);
-    TText* t5 = new TText(0.5, 0.6, Form("Found in f-%i xsnum = %i and ysnum = %i", lowF, lowX, lowY));
-    t5->SetTextAlign(22);
-    TText* t6 = new TText(0.5,.4,Form("Low Time to 200 Events: %f s", lowTime));
-    t6->SetTextAlign(22);
-    TText* t7 = new TText(0.5,0.2,Form("Summed rate: %f Hz", sumRate));
-    t7->SetTextAlign(22);
+    gStyle->SetPaintTextFormat("4.3f");
+    //Print the rates corresponding to each hole on each of the pdf files. Do this for each foil and the combined rates.
+    if (check > 0){
+        
+        c->Clear();
+        h_rates_foils[0]->Draw("COLZ");
+        h_rates_foils[0]->Draw("SAMETEXT");
+        c->SaveAs(outputpdf1);
+        if(threeFoil){
+            c->Clear();
+            h_rates_foils[1]->Draw("COLZ");
+            h_rates_foils[1]->Draw("SAMETEXT");
+            c->SaveAs(outputpdf1);
+        }
+        c->Clear();
+        h_rates_foils[nfoil-1]->Draw("COLZ");
+        h_rates_foils[nfoil-1]->Draw("SAMETEXT");
+        c->SaveAs(outputpdf1);
+
+        c->Clear();
+        h_rates_all->Draw("COLZ");
+        h_rates_all->Draw("SAMETEXT");
+        c->SaveAs(outputpdf1);
+
+        cfp->Clear();
+        h_rates_foils[0]->Draw("COLZ");
+        h_rates_foils[0]->Draw("SAMETEXT");
+        cfp->SaveAs(outputpdf2);
+        if(threeFoil){
+            cfp->Clear();
+            h_rates_foils[1]->Draw("COLZ");
+            h_rates_foils[1]->Draw("SAMETEXT");
+            cfp->SaveAs(outputpdf2);
+        }
+        cfp->Clear();
+        h_rates_foils[nfoil-1]->Draw("COLZ");
+        h_rates_foils[nfoil-1]->Draw("SAMETEXT");
+        cfp->SaveAs(outputpdf2);
+
+        cfp->Clear();
+        h_rates_all->Draw("COLZ");
+        h_rates_all->Draw("SAMETEXT");
+        cfp->SaveAs(outputpdf2);
+    }
+
+    cytar->Clear();
+    h_rates_foils[0]->Draw("COLZ");
+    h_rates_foils[0]->Draw("SAMETEXT");
+    cytar->SaveAs(outputpdf3);
+    if(threeFoil){
+        cytar->Clear();
+        h_rates_foils[1]->Draw("COLZ");
+        h_rates_foils[1]->Draw("SAMETEXT");
+        cytar->SaveAs(outputpdf3);
+    }
+    cytar->Clear();
+    h_rates_foils[nfoil-1]->Draw("COLZ");
+    h_rates_foils[nfoil-1]->Draw("SAMETEXT");
+    cytar->SaveAs(outputpdf3);
+
+    cytar->Clear();
+    h_rates_all->Draw("COLZ");
+    h_rates_all->Draw("SAMETEXT");  
+    HList.Add(h_rates_all);
+    cytar->SaveAs(outputpdf3); 
 
     int hrs = (int)(lowTime/3600);
     int min = (int)((lowTime-hrs*3600)/60);
     Double_t sec = lowTime-hrs*3600-min*60;
-    TText* t8 = new TText(0.5,0.3,Form("Low Time to 200 Events: %i hr %i min %f s",hrs, min, sec ));
-    t8->SetTextAlign(22);
 
+    TText* t4 = new TText(0.5,.5,Form("Lowest Inelastic MC rate: %f Hz",lowRate));
+    t4->SetTextAlign(22);
+    t4->SetY(2);
+
+    TText* t5 = new TText(0.5, 0.6, Form("Found in f-%i xsnum = %i and ysnum = %i", lowF, lowX, lowY));
+    t5->SetTextAlign(22);
+    t5->SetY(3);
+
+    TText* t6 = new TText(0.5,.4,Form("Low Time to 200 Events: %f s", lowTime));
+    t6->SetTextAlign(22);
+    t6->SetY(1);
+
+    TText* t7 = new TText(0.5,0.2,Form("Summed rate: %f Hz", sumRate));
+    t7->SetTextAlign(22);
+    t7->SetY(-2);
+
+    TText* t8 = new TText(0.1,0.3,Form("Low Time to 200 Events: %i hr %i min %2.2fs",hrs, min, sec ));
+    t8->SetTextAlign(22);
+    t8->SetY(0.5);
+    
+    TText* t9 = new TText(0.5,0.1,Form("Number of holes with 0 counts: %i holes", zeroCount));
+    t9->SetTextAlign(22);
+    t9->SetY(-2.5);
+
+    TText* t10 = new TText(0.5,0.9,Form("Number of holes with 200 in 3hrs f=%i: %i holes", 0, timeUnder3_0));
+    t10->SetTextAlign(22);
+    t10->SetY(5.5);
+
+    TText* t11 = new TText(0.5,0.8,Form("Number of holes with 200 in 3hrs f=%i: %i holes", 1, timeUnder3_1));
+    t11->SetTextAlign(22);
+    t11->SetY(4.5);
+
+    TText* t12 = new TText(0.5,0.8,Form("Number of holes with 200 in 3hrs f=%i: %i holes", 2, timeUnder3_2));
+    t12->SetTextAlign(22);
+    t12->SetY(3.5);
+    
+    TText* t13 = new TText(0.5,0.8,Form("Holes with 200 in 3hrs combined rate: %i holes", comboTimeUnder3));
+    t13->SetTextAlign(22);
+    t13->SetY(-3.5);
+
+    //Print any useful data out to the final page of each pdf
     if(check > 0){
         c->Clear();
         t6->Draw();
@@ -492,6 +701,11 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
         t5->Draw("SAME");
         t8->Draw("SAME");
         t7->Draw("SAME");
+        t9->Draw("SAME");
+        t10->Draw("SAME");
+        t11->Draw("SAME");
+        if(threeFoil) t12->Draw("SAME");
+        t13->Draw("SAME");
         c->SaveAs(outputpdf1+")");
         
         cfp->Clear();
@@ -500,6 +714,11 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
         t5->Draw("SAME");
         t8->Draw("SAME");
         t7->Draw("SAME");
+        t9->Draw("SAME");
+        t10->Draw("SAME");
+        t11->Draw("SAME");
+        if(threeFoil) t12->Draw("SAME");
+        t13->Draw("SAME");
         cfp->SaveAs(outputpdf2+")");
     }
 
@@ -509,6 +728,11 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
     t5->Draw("SAME");
     t8->Draw("SAME");
     t7->Draw("SAME");
+    t9->Draw("SAME");
+    t10->Draw("SAME");
+    t11->Draw("SAME");
+    if(threeFoil) t12->Draw("SAME");
+    t13->Draw("SAME");
     cytar->SaveAs(outputpdf3+")");
 
 
@@ -516,10 +740,17 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
     delete cfp;
     delete cytar;
 
+    //Save all the filled histograms.
     TFile hsimc(outputhist,"recreate");
     HList.Write();
     cout << " Plotted histograms put in root file = " << outputhist << endl;
     
+    //Delete pointers.
+    delete h_rates_all;
+    delete h_rates_foils[0];
+    if(threeFoil) delete h_rates_foils[1];
+    delete h_rates_foils[nfoil-1];
+
     for(int n3 = 0; n3 < nfoil; n3++){
         for(int x4 = 0; x4 < xmax; x4++){
             for(int y4 = 0; y4 < ymax; y4++){

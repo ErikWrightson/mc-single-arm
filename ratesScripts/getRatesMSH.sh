@@ -2,7 +2,7 @@
 # the hms_foil_rates_carbon_inelastic_MSH macro, producing some histograms and getting the rate of events originating from each.
 if ( $#argv != 4 ) then
     echo "This script requires arguments of the name of a root file found in the worksim directory, a current value in uA,"
-    echo "the foil seperation in cm, and whether there are two or three foils in that order."
+    echo "the foil seperation in cm, and whether there are two or three foils (true = three) in that order."
 else
     set pth = "../worksim/$argv[1].root"
     if (-e "$pth") then

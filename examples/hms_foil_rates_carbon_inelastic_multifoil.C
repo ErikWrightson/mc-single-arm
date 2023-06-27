@@ -1,3 +1,11 @@
+/**
+ * Originally adapted from code by Mark Jones (jones) and modified to allow carbon multifoil use
+ * with a sieve in place, and intaking variable currents.
+ * @author Erik Wrightson (wrightso)
+ * @created June 2023
+ * @version 06.27.2023
+ */
+
 #include <TSystem.h>
 #include <TString.h>
 #include "TFile.h"
@@ -24,18 +32,36 @@
 using namespace std;
 #include "../pbmodel/F1F209Wrapper.hh"
 
+/**
+ * This macro runs gets the rate of events per foil from scattering on a carbon optics target in the HMS Spectrometer
+ * in Hall-C at JLab with the optics sieve in place. Must be linked with the object file libF1F209.so found in the pbmodel directory as it uses a
+ * wrapper class to get the inelastic cross-section  of each event. This will also plot various kinematics for events
+ * originating from scattering off each foil. 
+ *
+ * @note There is no delta cut being made and the cuts for the sieve holes are done asssuming assuming perfect hole
+ * ID using the initial target values for each event. Conversion for use with real data should be done by making cuts
+ * on reconstructed variables.
+ *
+ * @param basename - name of the root file that is assumed to be in the worksim directory
+ * @param cur - current to calculate the rates at in uA
+ * @param foilSep - seperation of the non-z=0 foils in cm
+ * @param threeFoil - flag for a threefoil target (true = there is a z=0 foil)
+ */
 void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double cur=70, double foilSep=8, bool threeFoil=false){
     
+    //Set the number of foils for this analysis. (Default to two.)
     int nfoil = 2;
-    
     if(threeFoil){
         nfoil = 3;
     }
     
+    //Prompt the user for the name of the root file if not already provided.
     if (basename=="temp") {
         cout << " Input the basename of the root file (assumed to be in worksim)" << endl;
         cin >> basename;
     }
+
+    //Set global options.
     gStyle->SetPalette(1,0);
     gStyle->SetOptStat(1);
     gStyle->SetOptFit(11);
@@ -44,21 +70,26 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
     gStyle->SetLabelSize(0.04,"XY");
     gStyle->SetTitleSize(0.06,"XY");
     gStyle->SetPadLeftMargin(0.12);
+
+    //Declare paths input and paths for storing output.
     TString inputroot;
     inputroot="worksim/"+basename+".root";
     TString outputhist;
     outputhist="worksim/multifoilHists/"+basename+"_multi_hist.root";
     TObjArray HList(0);
-    TString outputpdf1 = "inelastic_carbon/multifoil/"+basename+"_kin.pdf";;
-    TString outputpdf2 = "inelastic_carbon/multifoil/"+basename+".pdf";;
-    TString outputpdf3 = "inelastic_carbon/multifoil/"+basename+"_ytar.pdf";;
-    //   outputpdf="plots/"+basename+".pdf";
+    TString outputpdf1 = "inelastic_carbon/multifoil/"+basename+"_multi_kin.pdf";;
+    TString outputpdf2 = "inelastic_carbon/multifoil/"+basename+"_multi.pdf";;
+    TString outputpdf3 = "inelastic_carbon/multifoil/"+basename+"multi_ytar.pdf";;
     TString htitle=basename;
     TPaveLabel *title = new TPaveLabel(.15,.90,0.95,.99,htitle,"ndc");
     
     //  gSystem->Load("pbmodel/libF1F209.so");
+
+    //Open the rootfile and retrieve its tree.
     TFile *fsimc = new TFile(inputroot); 
     TTree *tsimc = (TTree*) fsimc->Get("h1");
+
+    //Declare variables to store each entry from the hms ntuple.
     Float_t         hsxfp; // position at focal plane ,+X is pointing down
     Float_t         hsyfp; // X x Y = Z so +Y pointing central ray left
     Float_t         hsxpfp; // dx/dz at focal plane
@@ -81,9 +112,10 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
     Float_t beam_e;
     Float_t p_spec_b;
     Float_t th_spec;
-    // Set branch addresses.
-    //   tsimc->SetBranchAddress("xsieve",&xs);
-    //  tsimc->SetBranchAddress("ysieve",&ys);
+    
+    / Set branch addresses.
+    tsimc->SetBranchAddress("xc_sieve",&xs);
+    tsimc->SetBranchAddress("yc_sieve",&ys);
     tsimc->SetBranchAddress("hsxfp",&hsxfp);
     tsimc->SetBranchAddress("hsyfp",&hsyfp);
     tsimc->SetBranchAddress("hsxpfp",&hsxpfp);
@@ -102,7 +134,7 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
     tsimc->SetBranchAddress("p_spec",&p_spec_b);
     tsimc->SetBranchAddress("th_spec",&th_spec);
     
-    //define simulation histograms
+    //Define simulation histograms for each foil.
     TH1F *hytar[nfoil];
     TH1F *hWw[nfoil];
     TH1F *hWQ2[nfoil];
@@ -123,11 +155,13 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
     TH2F* h_ztar_yptar_all[nfoil];
     TH1F* h_ytar[nfoil];
 
+    //Declare limits for plotting histograms
     Double_t x_r=40.;
     Double_t y_r= 40.;
     Double_t xp_r=.1;
     Double_t yp_r=.04;
 
+    //Instantiate the histograms.
     for(int n = 0; n < nfoil; n++){
         hytar[n] = new TH1F(Form("hytar_f%i", n), Form("hytar_f%i", n), 100, -6., 6.);
         
@@ -191,7 +225,6 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
     double sin_ts = sin(ts * deg2rad);
     double car_density = 2.2; // density of carbon g/cm3
     double mass_tar = 12. * 931.5; //mass of the target
-    //double cur; //current uA
     double thick; // target thickness g/cm2
     double run_time =515.;// secondes;
     double lumin ;// luminosity per ub 
@@ -200,26 +233,30 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
     double sig_inelastic;
     double ex_calc;
     double sig_elas_calc;
+    
+    //Included by linking with object file in pbmodel folder.
     F1F209Wrapper pF1F209;
     Float_t cfac ;
     Float_t weight;
     //
     cfac=1.;
     thick= 0.044; // foil thickness g/cm2 in multifoil
-    //thick= 0.1749; // 0.5% single carbon
-    lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA
+    //thick= 0.1749; // 0.5% single foil carbon
+    lumin= thick*cur/A*N_A/Q_E*1e-36;// lumin 1/ub for cur uA, 1e-36 corrects for change of unit size
     
+    //Store the rate for each foil.
     Double_t rate[nfoil];
     TText *t;
-    cout << "Entries: "<<nentries << endl;
+
     for (int i = 0; i < nentries; i++) {
         tsimc->GetEntry(i);
-        //cout<< "hsztari: "<< hsztari << endl;
+
         // Define kinematics
         Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
         nu = Ei - Ef; //GeV
         W2=0;
 
+        //if final energy is less than initial calculcate the other kinematic values for this event.
         if (nu >0) {
             theta = TMath::ACos((cos_ts - hsyptar * sin_ts) / TMath::Sqrt( 1. + hsxptar * hsxptar + hsyptar * hsyptar )); // polar 			scattering angle relative to the beam line //rad
             thetaDeg = theta / deg2rad;
@@ -230,12 +267,17 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
             if (W2 > 0) W = TMath::Sqrt(W2); //GeV
         }
         if(W2 > 0){
+            //Get inelastic cross section for this event.
             sig_inelastic = pF1F209.GetXS(Z, A, Ei, Ef, theta); // ub/MeV-sr
+
+            //Weight the data by the cross-section times the luminosity and weighting factor
             // wfac is domega*denergy/n_thrown rad*MeV
             // lumin 1/ub for cur uA
             weight=sig_inelastic*lumin*wfac*cfac;
         }
-
+        //Check if this event originated from the -z foil.
+        //USES INITIAL VALUES. ONLY VALID ASSUMING PERFECT IDENTIFICATION OF SOURCE (or using the mc-single-arm simulator).
+        //USE RECONSTRUCTED VALUES FOR CUTTING REAL DATA.
         if(hsztari >= -1*foilSep-(thick/2) && hsztari <= -1*foilSep+(thick/2)){
             h_ytar[0]->Fill(hsytari);
             h_ztar_yptar_all[0]->Fill(hsztari,hsyptari);
@@ -259,6 +301,10 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
             }
         }
         else if(hsztari >= foilSep-(thick/2) && hsztari <= foilSep+(thick/2)){
+            //Check if this event originated from the +z foil.
+            //USES INITIAL VALUES. ONLY VALID ASSUMING PERFECT IDENTIFICATION OF SOURCE (or using the mc-single-arm simulator)
+            //USE RECONSTRUCTED VALUES FOR CUTTING REAL DATA.
+            
             h_ytar[nfoil-1]->Fill(hsytari);
             h_ztar_yptar_all[nfoil-1]->Fill(hsztari,hsyptari);
 
@@ -281,6 +327,10 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
             }
         }
         else if(threeFoil && hsztari >= -(thick/2) && hsztari <= (thick/2)){
+            //Check if this event originated from the z=0 foil in the case of three foils.
+            //USES INITIAL VALUES. ONLY VALID ASSUMING PERFECT IDENTIFICATION OF SOURCE (or using the mc-single-arm simulator).
+            //USE RECONSTRUCTED VALUES FOR CUTTING REAL DATA.
+            
             h_ytar[1]->Fill(hsytari);
             h_ztar_yptar_all[1]->Fill(hsztari,hsyptari);
             
@@ -306,18 +356,25 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
 
     }
     
+    //Output the spectrometer angle and central momentum as a check that the data has been taken correctly.
     cout << " theta_spec = " << ts << " p_spec = " << p_spec << endl;
     //
+    //Declare the canvases used to create the pdfs printed.
     TCanvas *c = new TCanvas("c", "c", 800, 1200);
     TCanvas *cfp = new TCanvas("cfp","Focal plane ",1400,900);
     TCanvas *cytar = new TCanvas("cytar", "cytar", 800, 1200);
+    
+    //Check how many holes have non-zero rates.
     int check = 0;
 
     for(int n2 = 0; n2 < nfoil; n2++){
+
+        //Integrate over the weighted Q^2 to get the rate for each hole
         rate[n2] = hWQ2[n2]->Integral();
         t = new TText(.5,.5,Form("Inelastic MC rate: %f Hz",rate[n2]));
         t->SetTextAlign(22);
         
+        //Print the rates corresponding to each foil on each of the pdf files with their accompanying kinemaics. Do this for each foil and the combined rates.
         if (rate[n2] > 0) {
 
             check++;
@@ -343,9 +400,6 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
             t->Draw();
             c->SaveAs(outputpdf1);
             
-            //hom_dat->Draw("same");
-            //
-            //
             cfp->Divide(2,3);
             gStyle->SetGridStyle(1);
             cfp->cd(1);
@@ -405,11 +459,12 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
         }
     }
 
-    //
+    // Store the histograms plotted to a root file for use later if needed.
     TFile hsimc(outputhist,"recreate");
     HList.Write();
     cout << " Plotted histograms put in root file = " << outputhist << endl;
 
+    //Close the pdfs opened with a blank page in case any other diagnostics should need to be printed.
     if(check > 0){
         c->Clear();
         c->SaveAs(outputpdf1+")");
@@ -417,6 +472,7 @@ void hms_foil_rates_carbon_inelastic_multifoil(TString basename="temp", double c
         cfp->SaveAs(outputpdf2+")");
     }
 
+    //Delete all pointers
     delete c;
     delete cfp;
     delete cytar;

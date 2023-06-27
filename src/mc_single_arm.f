@@ -465,9 +465,9 @@ C Units are cm.
 	     z = (grnd() - 0.5) * foil_tk + foil_nm * 10
 
           elseif(gen_lim(6).eq.-2) then                 !optics2: two foils
-             foil_nm=grnd()                             !20um foils; z= +/- 8cm
+             foil_nm=grnd()                             !20um foils; z= +/- 8cm or +/ 3cm
              foil_nm=anint(foil_nm)                     != 0, 1
-	     z = (grnd() - 0.5) * foil_tk - 8+ foil_nm * 16
+	     z = (grnd() - 0.5) * foil_tk - 3+ foil_nm * 6
           endif
 C DJG Assume flat raster
 	  fr1 = (grnd() - 0.5) * gen_lim(7)   !raster x
