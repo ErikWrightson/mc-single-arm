@@ -47,8 +47,8 @@ NOTE: This leaves compressed the .rzdat file in the worksim directory that must 
 
 Uncompressing a .rzdat file
 ---------
-* source /apps/root/6.10.02/bin/thisroot.csh
-* h2root worksim/<filename>.rzdat worksim/<filename>.root (assuming the .rzdat file exists)
+source /apps/root/6.10.02/bin/thisroot.csh
+h2root worksim/filename.rzdat worksim/filename.root (assuming the .rzdat file exists)
 
 Code flow
 --------- 
@@ -105,32 +105,32 @@ Info on Shell (.sh) scripts
 ---------------
 * buildRoot.sh : 
     * input - 
-        * <filename> (<filename>.inp file must be in the infiles directory)
+        * filename (filename.inp file must be in the infiles directory)
     * description - 
         * Runs mc-single-arm for for the given .inp file
-        * Unpacks the <filename>.rzdat file into a <filename>.root file in the worksim directory
+        * Unpacks the filename.rzdat file into a filename.root file in the worksim directory
 * buildAndRunSingle :
     * input - 
-        * <filename> - <filename>.inp file must be in the infiles directory
+        * filename - filename.inp file must be in the infiles directory
         * current - current to get the inelastic carbon rates at in uA
     * description -
         * Runs the simulator and gets the pdfs and histograms for a single carbon foil target with and without sieve seperation cuts. 
     * script flow - 
-        * Calls buildRoot.sh for <filename>
-        * Runs the getRates.sh script (found in ratesScripts)for the <filename>.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil without sieve seperation cuts.
-        * Runs the getRatesSieve.sh script (found in ratesScripts) for the <filename>.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil WITH sieve seperation cuts.
+        * Calls buildRoot.sh for filename
+        * Runs the getRates.sh script (found in ratesScripts)for the filename.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil without sieve seperation cuts.
+        * Runs the getRatesSieve.sh script (found in ratesScripts) for the filename.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil WITH sieve seperation cuts.
 * buildAndRunMulti.sh :
     * input - 
-        * <filename> - <filename>.inp file must be in the infiles directory
+        * filename - filename.inp file must be in the infiles directory
         * current - current to get the inelastic carbon rates at in uA
         * foilSep - serpation of carbon foils in cm
         * threeFoil - boolean determining if this was a 3 foil run (foil assumed to be at z=0).
     * description -
         * Runs the simulator and gets the pdfs and histograms for a carbon multifoil target with and without sieve seperation cuts.
     * script flow - 
-        * Calls buildRoot.sh for <filename>
-        * Runs the getRatesMulti.sh script (found in ratesScripts)for the <filename>.root file to get the HMS carbon rates pdfs and histograms from each foil at the given current and foil seperation for a multifoil target without sieve seperation cuts.
-        * Runs the getRatesMSH.sh script (found in ratesScripts) for the <filename>.root file to get the HMS carbon rates pdfs and histograms from each foil for each sieve hole at the given current and foil seperation for a multifoil target WITH sieve seperation cuts.
+        * Calls buildRoot.sh for filename
+        * Runs the getRatesMulti.sh script (found in ratesScripts)for the filename.root file to get the HMS carbon rates pdfs and histograms from each foil at the given current and foil seperation for a multifoil target without sieve seperation cuts.
+        * Runs the getRatesMSH.sh script (found in ratesScripts) for the filename.root file to get the HMS carbon rates pdfs and histograms from each foil for each sieve hole at the given current and foil seperation for a multifoil target WITH sieve seperation cuts.
 
 Ntuple variables in SHMS hut ntuple ntuple id = 1411 
 ---------------------
