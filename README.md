@@ -17,15 +17,21 @@ since the Makefile is not smart enough to look for dependency
 Running code
 ------------
 
-Easiest way is to 
+Easiest way is to use "buildRoot.sh <filename>" (filename assumed to be in infiles subdirectory - will stop if not)
+
+NOTE: This will generate the compressed .rzdat file in the worksim directory and then automatically uncompress into a .root file leaving both in the worksim directory.
 
 Alternative 1:
 use "run_mc_single_arm <filename>" (filename assumed to be in infiles subdirectory)
+
+NOTE: This leaves compressed the .rzdat file in the worksim directory that must be unpacked.
 
 Alternative 2:
 cd src
 mc_single_arm 
 (ask for input file name (assumed in infiles subdirectory))
+
+NOTE: This leaves compressed the .rzdat file in the worksim directory that must be unpacked.
 
 * Input file : infile_name.inp
 * Output file is at outfiles/infile_name.out 
@@ -38,6 +44,11 @@ mc_single_arm
 * Hard coded flags in shms/mc_shms.f 
 ** use_sieve : pass particles through the sieve between HB and Q1 (false)
 ** use_coll  : pass particles through the collimator between HB and Q1 (true)
+
+Uncompressing a .rzdat file
+---------
+source /apps/root/6.10.02/bin/thisroot.csh
+h2root worksim/<filename>.rzdat worksim/<filename>.root (assuming the .rzdat file exists)
 
 Code flow
 --------- 
@@ -77,6 +88,7 @@ Sub Directories
 * runout : collected terminal outputs from running the simulator
 * pbmodel : model used to link to the object file libF1F209.so for getting cross-sections for the HMS carbon foil rates macros
 * examples : example analysis macros and HMS ideal (calculated using intial conditions, i.e. perfect sieve ID, perfect multifoil ID, etc.) Carbon foil rate macros
+* ratesScripts : script files to automatically run any of the HMS inelastic carbon rate macros
 
 Info on infiles
 ---------------
@@ -88,6 +100,37 @@ Info on infiles
 * The target length just need to set flag if aerogel will be in the detector stack
 * Up to the experiment to decide if the 1st Cerenkov detector will be needed for the experiemnt
 * If 1st Cerenkov not used then can replace with vacuum pipe. Option of helium bag is availble. this was for study.  
+
+Info on Shell (.sh) scripts
+---------------
+* buildRoot.sh : 
+    * input - 
+        * <filename> (<filename>.inp file must be in the infiles directory)
+    * description - 
+        * Runs mc-single-arm for for the given .inp file
+        * Unpacks the <filename>.rzdat file into a <filename>.root file in the worksim directory
+* buildAndRunSingle :
+    * input - 
+        * <filename> - <filename>.inp file must be in the infiles directory
+        * current - current to get the inelastic carbon rates at in uA
+    * description -
+        * Runs the simulator and gets the pdfs and histograms for a single carbon foil target with and without sieve seperation cuts. 
+    * script flow - 
+        * Calls buildRoot.sh for <filename>
+        * Runs the getRates.sh script (found in ratesScripts)for the <filename>.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil without sieve seperation cuts.
+        * Runs the getRatesSieve.sh script (found in ratesScripts) for the <filename>.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil WITH sieve seperation cuts.
+* buildAndRunMulti.sh :
+    * input - 
+        * <filename> - <filename>.inp file must be in the infiles directory
+        * current - current to get the inelastic carbon rates at in uA
+        * foilSep - serpation of carbon foils in cm
+        * threeFoil - boolean determining if this was a 3 foil run (foil assumed to be at z=0).
+    * description -
+        * Runs the simulator and gets the pdfs and histograms for a carbon multifoil target with and without sieve seperation cuts.
+    * script flow - 
+        * Calls buildRoot.sh for <filename>
+        * Runs the getRatesMulti.sh script (found in ratesScripts)for the <filename>.root file to get the HMS carbon rates pdfs and histograms from each foil at the given current and foil seperation for a multifoil target without sieve seperation cuts.
+        * Runs the getRatesMSH.sh script (found in ratesScripts) for the <filename>.root file to get the HMS carbon rates pdfs and histograms from each foil for each sieve hole at the given current and foil seperation for a multifoil target WITH sieve seperation cuts.
 
 Ntuple variables in SHMS hut ntuple ntuple id = 1411 
 ---------------------
