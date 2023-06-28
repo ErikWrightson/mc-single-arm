@@ -36,20 +36,19 @@ NOTE: This leaves compressed the .rzdat file in the worksim directory that must 
 * Input file : infile_name.inp
 * Output file is at outfiles/infile_name.out 
 * The hbook file is at worksim/infile_name.rzdat
-* Hard coded flags in mc_single_arm.f 
-** hut_ntuple : Write out ntuple (1 for HMS and 1411 for SHMS) described below. (true)
-** spec_ntuple: Write out ntuple 1412 described below (false)
-** decay_flag :	Allow decay of particle(false)
-** use_front_sieve : Pass particles through front sieve (false)   
-* Hard coded flags in shms/mc_shms.f 
-** use_sieve : pass particles through the sieve between HB and Q1 (false)
-** use_coll  : pass particles through the collimator between HB and Q1 (true)
+* Hard coded flags in mc_single_arm.f  :
+    * hut_ntuple : Write out ntuple (1 for HMS and 1411 for SHMS) described below. (true)
+    * spec_ntuple: Write out ntuple 1412 described below (false)
+    * decay_flag :	Allow decay of particle(false)
+    * use_front_sieve : Pass particles through front sieve (false)   
+* Hard coded flags in shms/mc_shms.f :
+    * use_sieve : pass particles through the sieve between HB and Q1 (false)
+    * use_coll  : pass particles through the collimator between HB and Q1 (true)
 
 Uncompressing a .rzdat file
 ---------
-source /apps/root/6.10.02/bin/thisroot.csh
-
-h2root worksim/<filename>.rzdat worksim/<filename>.root (assuming the .rzdat file exists)
+* source /apps/root/6.10.02/bin/thisroot.csh
+* h2root worksim/<filename>.rzdat worksim/<filename>.root (assuming the .rzdat file exists)
 
 Code flow
 --------- 
@@ -177,7 +176,7 @@ Ntuple variable in HMS hut ntuple ntuple id = 1
 * ys_num Sieve hole passed through in the y (horizontal) direction (NOT RECONSTRUCTED)
 * xc_sieve Reconstructed sieve hole passed through in the x (vertical) direction
 * yc_sieve Reconstucted sieve hole passed through in the y (horizontal) direction
-* wfac weighting factor - solid angle times energy divided by the number of trials domega*denergy/n_trials [rad*MeV]
+* wfac weighting factor - solid angle times energy divided by the number of trials (domega * denergy)/n_trials [rad * MeV]
 * beam_E Beam Energy [GeV]
 * p_spec Spectrometer Momentum  [GeV]
 * th_spec Spectometer Angle [deg]
