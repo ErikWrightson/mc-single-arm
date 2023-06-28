@@ -86,7 +86,7 @@ NOTE: It is recommended that these be adapted to options allowed to be set in th
         * Set target thickness in input file to -2 to acces this optics target.
         * Check your current target to see what multifoil seperation you need.
         * Changing this setting to a different foil seperation change the 3 to whatever seperation from 0 you want and 6 to the total seperation between your two foils. (Works for symmetrically seperated foils).
-        * For reference, the default initial z calculation is "z = (grnd() - 0.5) * foil_tk - 3+ foil_nm * 6" and the 10 would be what to change.
+        * For reference, the default initial z calculation is "z = (grnd() - 0.5) * foil_tk - 3+ foil_nm * 6" and the 3 and 6 would be what to change.
 
 * Optics Sieve : Running with the optics sieve in place or not has two different options.
     * Front Sieve (SHMS) - to use the front sieve in the SHMS the the use_front_sieve logical must be switched from false to true or vice versa run with no sieve.
