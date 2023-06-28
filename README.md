@@ -47,8 +47,8 @@ NOTE: This leaves compressed the .rzdat file in the worksim directory that must 
 
 Uncompressing a .rzdat file
 ---------
-source /apps/root/6.10.02/bin/thisroot.csh
-h2root worksim/filename.rzdat worksim/filename.root (assuming the .rzdat file exists)
+* source /apps/root/6.10.02/bin/thisroot.csh
+* h2root worksim/filename.rzdat worksim/filename.root (assuming the .rzdat file exists)
 
 Code flow
 --------- 
@@ -61,8 +61,8 @@ Code flow
 * Randomly selects particle delta=(p-pcent)/p, dy_s/dz_s amd dx_s/dz_s.
 * Drifts to z_s=0 plane
 * Calculated multiple scattering the target using the input radiation length
-** If target length greater than 3cm assume LH2 cryotarget for multiple scattering calculation.
-**  If target length less than 3cm assume simple solid target for multiple scattering calculation.
+    * If target length greater than 3cm assume LH2 cryotarget for multiple scattering calculation.
+    *  If target length less than 3cm assume simple solid target for multiple scattering calculation.
 * calulated mutliple scattering in scattering chamber window, air and spectrometer entrance window.
 * Call the mc_shms/mc_hms subroutine to transport the particle through SHMS/HMS apertures and to the focal plane.
 * At the focal plane drift the particle through  1st Cerenkov or vacuum pipe (for SHMS only, depending on flag in input file),the drift chamber, scintillators, 2nd cerenkov and calorimeter to check if it hits them . 
@@ -70,7 +70,28 @@ Code flow
 * From focal plane calculate the reconstructed target quantities ytar,yptar,xptar and delta using the optics matrix. Note that for now use the known x target position in the optics matrix calculations. To mimic what would be in the analysis, need to calculate xtar from the reconstructed quantities using the raster vertical position and then recalculate the reconstructed quantities with updated xtar.
 * If particle makes it to the focal plane and hits all detectors the event variables are put in ntuple.
 
+Multifoil and Optics Sieve
+---------------
+* Currently the Multifoil and Optics Sieve optics options require some hard coded changes depending on what you would like to do. Hard coded changes can all be done within the mc_single_arm.f file.
 
+NOTE: It is recommended that these be adapted to options allowed to be set in the input file (or having more multifoil options registered throughout the code for target thickness).
+
+* Multifoil : Running with a multifoil target can currently be done for two optics options of target thickness in the input file.
+    * Optics 1 - Three foil (foils at z=0, +/- 10 cm)
+        * Set target thickness in input file to -3 to access this optics target.
+        * This target is currently not in the in use target ladder (check current target).
+        * Changing this setting to a different foil seperation just requires changing the 10 initial z calculation to the distance from 0 you want the foils in cm.
+        * For reference, the default initial z calculation is "z = (grnd() - 0.5) * foil_tk + foil_nm * 10" and the 10 would be what to change.
+    * Optics 2 - Two foil (foils set by default to z+/-3cm)
+        * Set target thickness in input file to -2 to acces this optics target.
+        * Check your current target to see what multifoil seperation you need.
+        * Changing this setting to a different foil seperation change the 3 to whatever seperation from 0 you want and 6 to the total seperation between your two foils. (Works for symmetrically seperated foils).
+        * For reference, the default initial z calculation is "z = (grnd() - 0.5) * foil_tk - 3+ foil_nm * 6" and the 10 would be what to change.
+
+* Optics Sieve : Running with the optics sieve in place or not has two different options.
+    * Front Sieve (SHMS) - to use the front sieve in the SHMS the the use_front_sieve logical must be switched from false to true or vice versa run with no sieve.
+    * Sieve (HMS) - to use the sieve for the HMS the use_sieve logical must be changed from false to true or vice versa run with no sieve. (currently set to true by default).
+    * This could be implemented into being an option in the input file.
 
 Sub Directories
 ---------------
@@ -106,9 +127,13 @@ Info on Shell (.sh) scripts
 * buildRoot.sh : 
     * input - 
         * filename (filename.inp file must be in the infiles directory)
-    * description - 
+    * description -
+        * 
+    * script flow - 
         * Runs mc-single-arm for for the given .inp file
+        * Ensures that the filename given is cast to all lowercase since the .root file will always be all lowercase.
         * Unpacks the filename.rzdat file into a filename.root file in the worksim directory
+
 * buildAndRunSingle :
     * input - 
         * filename - filename.inp file must be in the infiles directory
@@ -116,9 +141,12 @@ Info on Shell (.sh) scripts
     * description -
         * Runs the simulator and gets the pdfs and histograms for a single carbon foil target with and without sieve seperation cuts. 
     * script flow - 
+        * Checks that the right amount of arguments was entered and the path to the input file exists
         * Calls buildRoot.sh for filename
+        * Ensures that the filename given is cast to all lowercase since the .root file will always be all lowercase.
         * Runs the getRates.sh script (found in ratesScripts)for the filename.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil without sieve seperation cuts.
         * Runs the getRatesSieve.sh script (found in ratesScripts) for the filename.root file to get the HMS carbon rates pdfs and histograms for a single carbon foil WITH sieve seperation cuts.
+
 * buildAndRunMulti.sh :
     * input - 
         * filename - filename.inp file must be in the infiles directory
@@ -128,9 +156,74 @@ Info on Shell (.sh) scripts
     * description -
         * Runs the simulator and gets the pdfs and histograms for a carbon multifoil target with and without sieve seperation cuts.
     * script flow - 
+        * Checks that the right amount of arguments was entered and the path to the input file exists
         * Calls buildRoot.sh for filename
+        * Ensures that the filename given is cast to all lowercase since the .root file will always be all lowercase.
         * Runs the getRatesMulti.sh script (found in ratesScripts)for the filename.root file to get the HMS carbon rates pdfs and histograms from each foil at the given current and foil seperation for a multifoil target without sieve seperation cuts.
         * Runs the getRatesMSH.sh script (found in ratesScripts) for the filename.root file to get the HMS carbon rates pdfs and histograms from each foil for each sieve hole at the given current and foil seperation for a multifoil target WITH sieve seperation cuts.
+
+NOTE: ALL SCRIPTS BELOW FOUND IN ratesScripts DIRECTORY
+
+* getRates.sh -
+    * input -
+        * filename - filename.root must be in worksim directory
+        * current - current to get the inelastic carbon rates at in uA
+    * description - 
+        * Gets the total rate and prints select kinematic plots to pdf and root histogram files from a single carbon foil target without any sieve seperation cuts (can be used with or without sieve).
+    * script flow - 
+        * Ensures the right number of arguments was entered and that the path to filename.root exists.
+        * Enters the pbmodel directory and ensures the libF1F209.so is made and linked with the files in the examples directory that uses it.
+        * Clears the terminal.
+        * Launches root and loads the object file from the pbmodel directory.
+        * Executes the hms_foil_rates_carbon_inelastic macro for the input root file and the given current which is found in the example directory to get the rates, make the histograms, and print the pdfs.
+        * Quits root.
+
+
+* getRatesSieve - 
+    * input -
+        * filename - filename.root must be in worksim directory
+        * current - current to get the inelastic carbon rates at in uA
+    * description - 
+        * Gets the per sieve hole rate (and time to 200 events per hole, etc.) and prints select kinematic plots to pdf and root histogram files for each sieve hole for a single carbon foil target WITH sieve seperation cuts.
+    * script flow - 
+        * Ensures the right number of arguments was entered and that the path to filename.root exists.
+        * Enters the pbmodel directory and ensures the libF1F209.so is made and linked with the files in the examples directory that uses it.
+        * Clears the terminal.
+        * Launches root and loads the object file from the pbmodel directory.
+        * Executes the hms_foil_rates_carbon_inelastic_sieveholes macro for the input root file and the given current which is found in the example directory to get the rates per sieve hole, make the histograms, and print the pdfs.
+        * Quits root.
+
+* getRatesMulti - 
+    * input -
+        * filename - filename.root must be in worksim directory
+        * current - current to get the inelastic carbon rates at in uA
+        * foilSep - serpation of carbon foils in cm
+        * threeFoil - boolean determining if this was a 3 foil run (foil assumed to be at z=0).
+    * description - 
+        * Gets the total rate for each foil and prints select kinematic plots to pdf and root histogram files from a carbon multifoil target without any sieve seperation cuts (can be used with or without sieve).
+    * script flow - 
+        * Ensures the right number of arguments was entered and that the path to filename.root exists.
+        * Enters the pbmodel directory and ensures the libF1F209.so is made and linked with the files in the examples directory that uses it.
+        * Clears the terminal.
+        * Launches root and loads the object file from the pbmodel directory.
+        * Executes the hms_foil_rates_carbon_inelastic_multifoil macro for the input root file, the given current, the given foilSep, and whether there are three foils or not which is found in the example directory to get the rates per target foil, make the histograms, and print the pdfs.
+        * Quits root.
+
+* getRatesMSH.sh
+    * input -
+        * filename - filename.root must be in worksim directory
+        * current - current to get the inelastic carbon rates at in uA
+        * foilSep - serpation of carbon foils in cm
+        * threeFoil - boolean determining if this was a 3 foil run (foil assumed to be at z=0).
+    * description - 
+        * Gets the per sieve hole rate from each foil source (and time to 200 events per hole, etc.) and prints select kinematic plots to pdf and root histogram files for each sieve hole for a carbon multifoil target WITH sieve seperation cuts.
+    * script flow - 
+        * Ensures the right number of arguments was entered and that the path to filename.root exists.
+        * Enters the pbmodel directory and ensures the libF1F209.so is made and linked with the files in the examples directory that uses it.
+        * Clears the terminal.
+        * Launches root and loads the object file from the pbmodel directory.
+        * Executes the hms_foil_rates_carbon_inelastic_MSH macro for the input root file, the given current, the given foilSep, and whether there are three foils or not which is found in the example directory to get the rates per sieve hole from each target foil, make the histograms, and print the pdfs.
+        * Quits root.
 
 Ntuple variables in SHMS hut ntuple ntuple id = 1411 
 ---------------------
