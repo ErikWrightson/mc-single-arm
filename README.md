@@ -48,6 +48,7 @@ NOTE: This leaves compressed the .rzdat file in the worksim directory that must 
 Uncompressing a .rzdat file
 ---------
 source /apps/root/6.10.02/bin/thisroot.csh
+
 h2root worksim/<filename>.rzdat worksim/<filename>.root (assuming the .rzdat file exists)
 
 Code flow
