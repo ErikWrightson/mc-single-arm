@@ -260,7 +260,7 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
                 //Ignore holes that are not actually there (refer to sieve schematic).
                 //Central hole is smaller than other but not implemented since central hole is never really a limiting factor.
                 //USE RECONSTRUCTED SIEVE VARIABLES FOR REAL DATA ANALYSIS
-                if(xsnum == x2-4 && ysnum == y2-4 && !(xsnum == -1 && ysnum == 1) && !(xsnum == 1 && ysnum == -1)){
+                if(xsnum == x2-4 && ysnum == y2-4 && !(xsnum == -2 && ysnum == 1) && !(xsnum == 1 && ysnum == -1)){
                     
                     // Define kinematics
                     Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
@@ -453,7 +453,7 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
     int timeUnder3 = 0;
 
     //Declare a histogram to hold the rates for each hole.
-    TH2F *h_rates = new TH2F("h_rates",";xsnum;ysnum",30,-5,5,30,-5,5);
+    TH2F *h_rates = new TH2F("h_rates",";ysnum;xsnum",30,-5,5,30,-5,5);
 
     //Get the summed rate from all the holes, the rate from the hole with the lowest rate,
     //its location, and its time to 200 counts. Fill the rates histogram.
@@ -472,7 +472,7 @@ void hms_foil_rates_carbon_inelastic_sieveholes(TString basename="temp",double c
             if(time[x5][y5] != 0 &&time[x5][y5] < 10800){
                 timeUnder3++;
             }
-            h_rates->Fill(x5-4,y5-4,rate[x5][y5]);
+            h_rates->Fill(y5-4,x5-4,rate[x5][y5]);
         }
     }
 

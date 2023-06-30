@@ -272,7 +272,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                 //Sort for each whole that each event came through. (THIS USES THE INITIAL VARIABLES NOT THE RECONSTRUCTED)
                 //Ignore holes that are not actually there (refer to sieve schematic).
                 //Central hole is smaller than other but not implemented since central hole is never really a limiting factor.
-                if(xsnum == x2-4 && ysnum == y2-4 && !(xsnum == -1 && ysnum == 1) && !(xsnum == 1 && ysnum == -1)){
+                if(xsnum == x2-4 && ysnum == y2-4 && !(xsnum == -2 && ysnum == 1) && !(xsnum == 1 && ysnum == -1)){
                     
                     // Define kinematics
                     Ef = p_spec * (1.0 + 0.01*hsdelta); //scattered electron energy //GeV
@@ -523,15 +523,15 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
     //Declare histograms to store the rates of events sourced from each foil.
     TH2F *h_rates_foils[nfoil];
     if(threeFoil){
-        h_rates_foils[0] = new TH2F("h_rates_f0","Rates from f=0;xsnum;ysnum",30,-5,5,30,-5,5);
-        h_rates_foils[1] = new TH2F("h_rates_f1","Rates from f=1;xsnum;ysnum",30,-5,5,30,-5,5);
-        h_rates_foils[nfoil-1] = new TH2F("h_rates_f2","Rates from f=2;xsnum;ysnum",30,-5,5,30,-5,5);
+        h_rates_foils[0] = new TH2F("h_rates_f0","Rates from f=0;ysnum;xsnum",30,-5,5,30,-5,5);
+        h_rates_foils[1] = new TH2F("h_rates_f1","Rates from f=1;ysnum;xsnum",30,-5,5,30,-5,5);
+        h_rates_foils[nfoil-1] = new TH2F("h_rates_f2","Rates from f=2;ysnum;xsnum",30,-5,5,30,-5,5);
     }
     else{
-        h_rates_foils[0] = new TH2F("h_rates_f0","Rates from f=0;xsnum;ysnum",30,-5,5,30,-5,5);
-        h_rates_foils[nfoil-1] = new TH2F("h_rates_f1","Rates from f=1;xsnum;ysnum",30,-5,5,30,-5,5);
+        h_rates_foils[0] = new TH2F("h_rates_f0","Rates from f=0;ysnum;xsnum",30,-5,5,30,-5,5);
+        h_rates_foils[nfoil-1] = new TH2F("h_rates_f1","Rates from f=1;ysnum;xsnum",30,-5,5,30,-5,5);
     }
-    TH2F *h_rates_all = new TH2F("h_rates_all","Combined Rates from all foils;xsnum;ysnum",30,-5,5,30,-5,5);
+    TH2F *h_rates_all = new TH2F("h_rates_all","Combined Rates from all foils;ysnum;xsnum",30,-5,5,30,-5,5);
     
     //Get the lowest non-zero rate for hole, its location and fill the rates histograms.
     for(int n4 = 0; n4 < nfoil; n4++){
@@ -545,7 +545,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                     lowY = y5 - 4;
                     lowF = n4;
                 }
-                h_rates_foils[n4]->Fill(x5-4,y5-4,rate[n4][x5][y5]);
+                h_rates_foils[n4]->Fill(y5-4,x5-4,rate[n4][x5][y5]);
             }
         }
     }
@@ -568,7 +568,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                 if(time[1][x6][y6] != 0 && time[1][x6][y6] < 10800) timeUnder3_1++;
                 if(time[nfoil-1][x6][y6] != 0 &&time[nfoil-1][x6][y6] < 10800) timeUnder3_2++;
                 if(200.0/(rate[0][x6][y6]+rate[1][x6][y6]+rate[nfoil-1][x6][y6]) < 10800) comboTimeUnder3++;
-                h_rates_all->Fill(x6-4,y6-4,rate[0][x6][y6]+rate[1][x6][y6]+rate[nfoil-1][x6][y6]);
+                h_rates_all->Fill(y6-4,x6-4,rate[0][x6][y6]+rate[1][x6][y6]+rate[nfoil-1][x6][y6]);
             }
             else{
                 if(rate[0][x6][y6] == 0 && rate[nfoil-1][x6][y6]){
@@ -577,7 +577,7 @@ void hms_foil_rates_carbon_inelastic_MSH(TString basename="temp",double cur=70, 
                 if(time[0][x6][y6] != 0 && time[0][x6][y6] < 10800) timeUnder3_0++;
                 if(time[nfoil-1][x6][y6] != 0 && time[nfoil-1][x6][y6] < 10800) timeUnder3_1++;
                 if(200.0/(rate[0][x6][y6]+rate[nfoil-1][x6][y6]) < 10800) comboTimeUnder3++;
-                h_rates_all->Fill(x6-4,y6-4,rate[0][x6][y6]+rate[nfoil-1][x6][y6]);
+                h_rates_all->Fill(y6-4,x6-4,rate[0][x6][y6]+rate[nfoil-1][x6][y6]);
 
             }
         }
