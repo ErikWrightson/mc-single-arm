@@ -134,6 +134,8 @@ Info on Shell (.sh) scripts
         * Ensures that the filename given is cast to all lowercase since the .root file will always be all lowercase.
         * Unpacks the filename.rzdat file into a filename.root file in the worksim directory
 
+NOTE: ALL SCRIPTS BELOW FOUND IN ratesScripts DIRECTORY
+
 * buildAndRunSingle :
     * input - 
         * filename - filename.inp file must be in the infiles directory
@@ -161,8 +163,6 @@ Info on Shell (.sh) scripts
         * Ensures that the filename given is cast to all lowercase since the .root file will always be all lowercase.
         * Runs the getRatesMulti.sh script (found in ratesScripts)for the filename.root file to get the HMS carbon rates pdfs and histograms from each foil at the given current and foil seperation for a multifoil target without sieve seperation cuts.
         * Runs the getRatesMSH.sh script (found in ratesScripts) for the filename.root file to get the HMS carbon rates pdfs and histograms from each foil for each sieve hole at the given current and foil seperation for a multifoil target WITH sieve seperation cuts.
-
-NOTE: ALL SCRIPTS BELOW FOUND IN ratesScripts DIRECTORY
 
 * getRates.sh -
     * input -
